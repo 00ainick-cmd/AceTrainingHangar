@@ -1519,13 +1519,6 @@ function reportTestScore(userScore, totalPossible) {
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize the app (renders categories and sets up event handlers)
   initializeApp();
-
-  // TEST BUTTON for debugging
-  const btn = document.createElement('button');
-  btn.innerHTML = '🧪 TEST SCORE';
-  btn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:99999;padding:12px 24px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
-  btn.onclick = () => reportTestScore(85, 100);
-  document.body.appendChild(btn);
 });
 
 window.reportTestScore = reportTestScore;
