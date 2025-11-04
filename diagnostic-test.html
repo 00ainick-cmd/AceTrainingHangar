@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Diagnostic Test - AEA Training</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #0b0f2b;
+      color: #fff;
+    }
+    .test-section {
+      background: #1a2347;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border: 2px solid #33f6ff;
+    }
+    .pass { color: #00ff00; }
+    .fail { color: #ff0000; }
+    button {
+      background: #33f6ff;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #00ddff;
+    }
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: 2px solid #33f6ff;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 AEA Training - Diagnostic Test</h1>
+
+  <div class="test-section">
+    <h2>File Existence Test</h2>
+    <p id="file-test">Testing...</p>
+    <button onclick="testFiles()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Tab Switching Test</h2>
+    <p>Click buttons to test tab visibility:</p>
+    <button onclick="testShowTab('home')">Show Home</button>
+    <button onclick="testShowTab('flashcards')">Show Flashcards</button>
+    <button onclick="testShowTab('practice')">Show Practice</button>
+    <button onclick="testShowTab('jeopardy')">Show Jeopardy</button>
+
+    <div id="home-test" class="tab-test" style="display:block; margin-top:20px; padding:20px; background:#0a0e1a;">
+      <h3>Home View</h3>
+      <p>This is the home view</p>
+    </div>
+    <div id="flashcards-test" class="tab-test" style="display:none; margin-top:20px; padding:20px; background:#0a0e1a;">
+      <h3>Flashcards View</h3>
+      <p>This is the flashcards view</p>
+    </div>
+    <div id="practice-test" class="tab-test" style="display:none; margin-top:20px; padding:20px; background:#0a0e1a;">
+      <h3>Practice View</h3>
+      <p>This is the practice view</p>
+    </div>
+    <div id="jeopardy-test" class="tab-test" style="display:none; margin-top:20px; padding:20px; background:#0a0e1a;">
+      <h3>Jeopardy View</h3>
+      <p>This is the jeopardy view</p>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>IFrame Loading Test</h2>
+    <p>Test if modules load in iframes:</p>
+    <button onclick="loadIframe('CAET Practice Test -- MASTER.html')">Load Practice Test</button>
+    <button onclick="loadIframe('Jeopardy Master.html')">Load Jeopardy</button>
+    <div id="iframe-container"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Console Log</h2>
+    <pre id="console-log" style="background:#000; padding:10px; max-height:300px; overflow-y:auto;"></pre>
+  </div>
+
+  <script>
+    let logs = [];
+
+    function log(message, isError = false) {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `[${timestamp}] ${message}`;
+      logs.push(logEntry);
+      document.getElementById('console-log').textContent = logs.join('\n');
+      console.log(message);
+      if (isError) console.error(message);
+    }
+
+    function testFiles() {
+      log('Starting file existence test...');
+
+      const files = [
+        'CAET Practice Test -- MASTER.html',
+        'Jeopardy Master.html',
+        'index.html'
+      ];
+
+      files.forEach(file => {
+        fetch(file)
+          .then(response => {
+            if (response.ok) {
+              log(`✅ ${file} - EXISTS and accessible`, false);
+            } else {
+              log(`❌ ${file} - NOT FOUND (${response.status})`, true);
+            }
+          })
+          .catch(err => {
+            log(`❌ ${file} - ERROR: ${err.message}`, true);
+          });
+      });
+    }
+
+    function testShowTab(tabName) {
+      log(`Switching to tab: ${tabName}`);
+
+      const tabs = ['home-test', 'flashcards-test', 'practice-test', 'jeopardy-test'];
+      tabs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.style.display = 'none';
+          log(`  Hidden: ${id}`);
+        }
+      });
+
+      const targetId = tabName + '-test';
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        targetElement.style.display = 'block';
+        log(`  Shown: ${targetId}`);
+      } else {
+        log(`  ERROR: Element ${targetId} not found!`, true);
+      }
+    }
+
+    function loadIframe(src) {
+      log(`Loading iframe: ${src}`);
+      const container = document.getElementById('iframe-container');
+      container.innerHTML = `<iframe src="${src}" onload="log('✅ IFrame loaded: ${src}')" onerror="log('❌ IFrame error: ${src}', true)"></iframe>`;
+    }
+
+    // Auto-run file test on load
+    window.addEventListener('load', () => {
+      log('Diagnostic page loaded');
+      testFiles();
+    });
+  </script>
+</body>
+</html>
