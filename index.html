@@ -689,6 +689,20 @@
             </div>
           </div>
         </div>
+
+        <!-- NEW: Detailed Analytics Card -->
+        <div class="card" style="margin-top:16px;background:linear-gradient(145deg,#1a2347,#12183a);border:2px solid var(--lime);">
+          <h3 style="color:var(--lime);">📊 Progress Analytics</h3>
+          <div id="analytics-content" style="font-size:12px;color:var(--text-muted);line-height:1.8;">
+            <p style="margin:8px 0;">🎯 Total Sessions: <span id="total-sessions" style="color:var(--lime);font-weight:bold;">0</span></p>
+            <p style="margin:8px 0;">✨ Lifetime XP Earned: <span id="lifetime-xp" style="color:var(--amber);font-weight:bold;">0</span></p>
+            <p style="margin:8px 0;">📚 Modules Completed: <span id="modules-completed-count" style="color:var(--neon-cyan);font-weight:bold;">0/4</span></p>
+            <p style="margin:8px 0;">🏆 Badges Earned: <span id="badges-earned-count" style="color:var(--magenta);font-weight:bold;">0/12</span></p>
+          </div>
+          <button id="view-history-btn" style="margin-top:12px;padding:8px 16px;background:linear-gradient(145deg,#2a3357,#1a2347);border:1px solid var(--lime);color:var(--lime);border-radius:8px;cursor:pointer;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.05em;transition:all 200ms ease;" onmouseover="this.style.boxShadow='0 0 20px var(--lime)';this.style.transform='translateY(-2px)';" onmouseout="this.style.boxShadow='none';this.style.transform='translateY(0)';">
+            View Score History
+          </button>
+        </div>
       </section>
 
       <!-- Home View -->
@@ -828,7 +842,10 @@
       completedModules: [],
       moduleAttempts: {},
       moduleScores: {},
-      sessionModules: []
+      sessionModules: [],
+      scoreHistory: {},      // NEW: Track all attempts with timestamps
+      totalXPEarned: 0,      // NEW: Lifetime XP tracker
+      sessionsCompleted: 0   // NEW: Total learning sessions
     };
 
     function loadGameState() {
@@ -868,19 +885,21 @@
       return { level, xpProgress, xpNeeded };
     }
 
-    function awardXP(module, score) {
-      const attempts = gameState.moduleAttempts[module] || 0;
+    function awardXP(module, score, attemptNumber) {
+      // CRITICAL FIX: Use attemptNumber parameter instead of reading from state
+      // This prevents the off-by-one bug where first attempt got 50% XP
+      const attempts = attemptNumber;
       let baseXP = 0;
-      
+
       // First time completion bonus
       if (attempts === 0 && !gameState.completedModules.includes(module)) {
         baseXP += 20;
       }
-      
+
       // Diminishing returns on repeated attempts
       const diminishFactors = [1.0, 0.5, 0.3, 0.1];
       const factor = diminishFactors[Math.min(attempts, 3)];
-      
+
       // Score-based XP
       let scoreXP = 0;
       if (score >= 90) {
@@ -890,30 +909,31 @@
       } else if (score >= 70) {
         scoreXP = 5;
       }
-      
+
       // FLASHCARDS GET 50% XP (it's study mode, not assessment)
       if (module === 'flashcards') {
         scoreXP = Math.round(scoreXP * 0.5);
         baseXP = Math.round(baseXP * 0.5);
       }
-      
+
       baseXP += Math.round(scoreXP * factor);
-      
+
       if (baseXP > 0) {
         const oldLevel = gameState.level;
         gameState.xp += baseXP;
-        
+        gameState.totalXPEarned += baseXP; // NEW: Track lifetime XP
+
         const newStats = calculateLevel(gameState.xp);
         gameState.level = newStats.level;
-        
+
         showXPGain(baseXP);
-        
+
         if (newStats.level > oldLevel) {
           showLevelUp(newStats.level);
           checkBadge('champion');
         }
       }
-      
+
       return baseXP;
     }
 
@@ -1024,78 +1044,114 @@
     // MAIN COMPLETION FUNCTION - Called from child iframes
     function completeModule(module, score) {
       console.log(`Module completed: ${module}, Score: ${score}%`);
-      
+
+      // CRITICAL FIX: Get attempt number BEFORE incrementing
+      const currentAttempt = gameState.moduleAttempts[module] || 0;
+
+      // Initialize tracking objects if needed
       if (!gameState.moduleAttempts[module]) {
         gameState.moduleAttempts[module] = 0;
       }
+      if (!gameState.scoreHistory[module]) {
+        gameState.scoreHistory[module] = [];
+      }
+
+      // Increment attempt counter
       gameState.moduleAttempts[module]++;
-      
+      gameState.sessionsCompleted++;
+
+      // Add to score history with timestamp
+      gameState.scoreHistory[module].push({
+        attempt: gameState.moduleAttempts[module],
+        score: score,
+        timestamp: new Date().toISOString(),
+        xpEarned: 0 // Will be updated below
+      });
+
       // Track best score
+      const oldScore = gameState.moduleScores[module] || 0;
       if (!gameState.moduleScores[module] || gameState.moduleScores[module] < score) {
-        const oldScore = gameState.moduleScores[module] || 0;
         gameState.moduleScores[module] = score;
-        
+
         // Check for improvement badge
         if (oldScore > 0 && (score - oldScore) >= 20 && !gameState.badges.includes('improvement')) {
           awardBadge('improvement');
         }
       }
-      
+
       // Mark as completed
       if (!gameState.completedModules.includes(module)) {
         gameState.completedModules.push(module);
         gameState.sessionModules.push(module);
       }
-      
+
       // Check for quick learner badge (90%+ on first try)
-      if (gameState.moduleAttempts[module] === 1 && score >= 90 && !gameState.badges.includes('quick_learner')) {
+      if (currentAttempt === 0 && score >= 90 && !gameState.badges.includes('quick_learner')) {
         awardBadge('quick_learner');
       }
-      
-      // Award XP
-      const xpEarned = awardXP(module, score);
-      
+
+      // Award XP with CORRECT attempt number (before increment)
+      const xpEarned = awardXP(module, score, currentAttempt);
+
+      // Update the score history entry with actual XP earned
+      if (gameState.scoreHistory[module].length > 0) {
+        gameState.scoreHistory[module][gameState.scoreHistory[module].length - 1].xpEarned = xpEarned;
+      }
+
       // Check badges
       if (gameState.completedModules.length === 1) checkBadge('first_module');
       if (gameState.completedModules.length === 4) checkBadge('all_modules');
       checkBadge('score');
       checkBadge('on_fire');
       checkBadge('practice_repeater');
-      
+
       // Special Jeopardy win badge
       if (module === 'jeopardy' && score > 50) {
         checkBadge('jeopardy_win');
       }
-      
-      // Show completion message
-      let message = `Module Complete: ${module.toUpperCase()}\n\n`;
-      message += `Score: ${score}%\n`;
-      message += `XP Earned: ${xpEarned}\n`;
-      message += `Total XP: ${gameState.xp}\n`;
-      message += `Level: ${gameState.level}\n\n`;
-      message += score >= 70 ? '✅ PASSED!' : '❌ Keep studying!';
-      
-      if (module === 'flashcards') {
-        message += '\n\n(Study mode: 50% XP)';
+
+      // Show enhanced completion message
+      let message = `🎯 Module Complete: ${module.toUpperCase()}\n\n`;
+      message += `📊 Score: ${score}%`;
+      if (oldScore > 0 && score > oldScore) {
+        message += ` (Previous best: ${oldScore}%)`;
       }
-      
+      message += `\n✨ XP Earned: +${xpEarned}`;
+      message += `\n📈 Total XP: ${gameState.xp}`;
+      message += `\n🏆 Level: ${gameState.level}`;
+      message += `\n🔄 Attempt: #${gameState.moduleAttempts[module]}`;
+      message += `\n\n${score >= 70 ? '✅ PASSED!' : '❌ Keep studying!'}`;
+
+      if (module === 'flashcards') {
+        message += '\n\n💡 Study mode: 50% XP';
+      }
+
+      if (currentAttempt > 0) {
+        const diminishFactors = [1.0, 0.5, 0.3, 0.1];
+        const factor = diminishFactors[Math.min(currentAttempt, 3)];
+        const percentage = Math.round(factor * 100);
+        message += `\n⚡ XP Multiplier: ${percentage}%`;
+      }
+
       alert(message);
-      
+
       updateDisplay();
       saveGameState();
     }
 
     function updateDisplay() {
       const stats = calculateLevel(gameState.xp);
-      
+
+      // Update level and XP displays
       document.getElementById('level-display').textContent = stats.level;
       document.getElementById('level-num').textContent = stats.level;
       document.getElementById('xp-display').textContent = gameState.xp;
       document.getElementById('xp-current').textContent = stats.xpProgress;
       document.getElementById('xp-needed').textContent = stats.xpNeeded;
-      document.getElementById('xp-progress').style.width = 
+      document.getElementById('xp-progress').style.width =
         `${(stats.xpProgress / stats.xpNeeded) * 100}%`;
-      
+
+      // Update badges display
       const badgesContainer = document.getElementById('badges-container');
       if (gameState.badges.length > 0) {
         badgesContainer.innerHTML = gameState.badges.map(badgeId => {
@@ -1103,7 +1159,16 @@
           return `<span class="badge" title="${badge.desc}">${badge.name}</span>`;
         }).join('');
       }
-      
+
+      // NEW: Update analytics display
+      document.getElementById('total-sessions').textContent = gameState.sessionsCompleted || 0;
+      document.getElementById('lifetime-xp').textContent = gameState.totalXPEarned || 0;
+      document.getElementById('modules-completed-count').textContent =
+        `${gameState.completedModules.length}/4`;
+      document.getElementById('badges-earned-count').textContent =
+        `${gameState.badges.length}/${BADGES.length}`;
+
+      // Update user display
       if (gameState.userName) {
         document.getElementById('user-name-display').textContent = gameState.userName;
         document.getElementById('user-bar').style.display = 'flex';
@@ -1133,9 +1198,43 @@
       }
     }
 
+    // NEW: Show Score History Modal
+    function showScoreHistory() {
+      if (!gameState.scoreHistory || Object.keys(gameState.scoreHistory).length === 0) {
+        alert('📊 No score history yet!\n\nComplete some modules to see your progress over time.');
+        return;
+      }
+
+      let historyHTML = '📊 SCORE HISTORY\n\n';
+
+      const modules = ['classroom', 'flashcards', 'practice', 'jeopardy'];
+      modules.forEach(module => {
+        const history = gameState.scoreHistory[module];
+        if (history && history.length > 0) {
+          historyHTML += `\n${module.toUpperCase()}:\n`;
+          history.forEach((entry, idx) => {
+            const date = new Date(entry.timestamp).toLocaleDateString();
+            const time = new Date(entry.timestamp).toLocaleTimeString();
+            historyHTML += `  ${idx + 1}. ${entry.score}% (+${entry.xpEarned} XP) - ${date} ${time}\n`;
+          });
+
+          // Show improvement
+          if (history.length > 1) {
+            const first = history[0].score;
+            const last = history[history.length - 1].score;
+            const improvement = last - first;
+            historyHTML += `  📈 Improvement: ${improvement > 0 ? '+' : ''}${improvement}%\n`;
+          }
+        }
+      });
+
+      historyHTML += '\n✨ Keep up the great work!';
+      alert(historyHTML);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       loadGameState();
-      
+
       const loginForm = document.getElementById('login-form');
       if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
@@ -1151,23 +1250,55 @@
           }
         });
       }
-      
+
       const resetBtn = document.getElementById('reset-btn');
       if (resetBtn) {
         resetBtn.addEventListener('click', function() {
-          if (confirm('⚠️ Reset all progress?\n\nThis will delete:\n• XP and level\n• All badges\n• Module scores\n\nThis cannot be undone!')) {
+          if (confirm('⚠️ Reset all progress?\n\nThis will delete:\n• XP and level\n• All badges\n• Module scores\n• Score history\n\nThis cannot be undone!')) {
             localStorage.removeItem('aeaGameState');
             location.reload();
           }
         });
       }
-      
+
+      // NEW: Attach score history button handler
+      const viewHistoryBtn = document.getElementById('view-history-btn');
+      if (viewHistoryBtn) {
+        viewHistoryBtn.addEventListener('click', showScoreHistory);
+      }
+
       showLogin();
       updateDisplay();
     });
 
     // Make completeModule available globally for child iframes
     window.completeModule = completeModule;
+
+    // DEBUG UTILITY: Console helper for XP calculations
+    window.debugGameState = function() {
+      console.log('=== GAMIFICATION DEBUG INFO ===');
+      console.log('User:', gameState.userName);
+      console.log('Current XP:', gameState.xp);
+      console.log('Lifetime XP Earned:', gameState.totalXPEarned);
+      console.log('Current Level:', gameState.level);
+      console.log('Sessions Completed:', gameState.sessionsCompleted);
+      console.log('Badges:', gameState.badges.length, '/', BADGES.length);
+      console.log('\nModule Progress:');
+      ['classroom', 'flashcards', 'practice', 'jeopardy'].forEach(module => {
+        const attempts = gameState.moduleAttempts[module] || 0;
+        const bestScore = gameState.moduleScores[module] || 0;
+        const history = gameState.scoreHistory[module] || [];
+        console.log(`  ${module}:`, {
+          attempts,
+          bestScore: bestScore + '%',
+          totalXP: history.reduce((sum, h) => sum + h.xpEarned, 0),
+          history: history.map(h => `${h.score}% (+${h.xpEarned}XP)`)
+        });
+      });
+      console.log('\nScore History:', gameState.scoreHistory);
+      console.log('===============================');
+      return gameState;
+    };
   </script>
 </body>
 </html>
