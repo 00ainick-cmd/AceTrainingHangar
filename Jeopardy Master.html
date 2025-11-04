@@ -1751,5 +1751,206 @@ document.addEventListener('DOMContentLoaded', function() {
 
 window.reportJeopardyScore = reportJeopardyScore;
 </script>  
+<script>
+// ============================================================================
+// XP INTEGRATION - COMPLETE SOLUTION WITH END SESSION BUTTON
+// ============================================================================
+
+// Function to report Jeopardy score to main page
+function reportJeopardyScore(playerFinalScore, aiFinalScore) {
+  const totalScore = playerFinalScore + aiFinalScore;
+  const percentage = totalScore > 0 ? Math.round((playerFinalScore / totalScore) * 100) : 0;
+  
+  console.log('🎮 Jeopardy Session Ending');
+  console.log('🎮 Player Score: ' + playerFinalScore);
+  console.log('🎮 AI Score: ' + aiFinalScore);
+  console.log('🎮 Player Percentage: ' + percentage + '%');
+  
+  // Try to send to parent page
+  try {
+    if (window.parent && window.parent.completeModule) {
+      console.log('✅ Sending score to parent page');
+      window.parent.completeModule('jeopardy', percentage);
+      
+      // Show success message
+      alert('Session Saved!\n\nYour Score: ' + percentage + '%\nReturning to dashboard...');
+      
+      // Return to home after short delay
+      setTimeout(function() {
+        if (window.parent && window.parent.showTab) {
+          window.parent.showTab('home');
+        }
+      }, 1000);
+      
+      return true;
+    }
+  } catch(e) {
+    console.log('❌ Direct call failed:', e.message);
+  }
+  
+  // Fallback: Try postMessage
+  try {
+    console.log('📤 Trying postMessage method');
+    window.parent.postMessage({
+      type: 'moduleComplete',
+      module: 'jeopardy',
+      score: percentage
+    }, '*');
+    
+    alert('Session Saved!\n\nYour Score: ' + percentage + '%\n\n(If XP doesn\'t appear, refresh the page)');
+    return true;
+  } catch(e) {
+    console.log('❌ postMessage failed:', e.message);
+  }
+  
+  // If nothing worked
+  alert('❌ Could not connect to main page.\n\nYour score: ' + percentage + '%\n\nTry refreshing the page.');
+  return false;
+}
+
+// Create END SESSION button
+function createEndSessionButton() {
+  // Check if button already exists
+  if (document.getElementById('endSessionBtn')) {
+    return;
+  }
+  
+  const btn = document.createElement('button');
+  btn.id = 'endSessionBtn';
+  btn.innerHTML = '💾 END SESSION & SAVE SCORE';
+  btn.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 99999;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: 3px solid #fff;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 900;
+    font-size: 16px;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+    font-family: 'Montserrat', system-ui, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+  `;
+  
+  btn.onmouseover = function() {
+    this.style.transform = 'scale(1.05) translateY(-2px)';
+    this.style.boxShadow = '0 12px 32px rgba(102, 126, 234, 0.7)';
+  };
+  
+  btn.onmouseout = function() {
+    this.style.transform = 'scale(1) translateY(0)';
+    this.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.5)';
+  };
+  
+  btn.onclick = function() {
+    console.log('💾 End Session button clicked');
+    
+    // Get current scores from the page
+    const playerScoreEl = document.getElementById('pScore');
+    const aiScoreEl = document.getElementById('aiScore');
+    
+    if (playerScoreEl && aiScoreEl) {
+      // Extract numbers from "$1,200" format
+      const playerScoreText = playerScoreEl.textContent.replace(/[$,]/g, '');
+      const aiScoreText = aiScoreEl.textContent.replace(/[$,]/g, '');
+      
+      const playerScore = parseInt(playerScoreText) || 0;
+      const aiScore = parseInt(aiScoreText) || 0;
+      
+      console.log('📊 Final Scores - Player: ' + playerScore + ', AI: ' + aiScore);
+      
+      if (playerScore === 0 && aiScore === 0) {
+        alert('⚠️ No game detected!\n\nPlay at least one round before ending session.');
+        return;
+      }
+      
+      // Confirm before ending
+      const confirmed = confirm(
+        '💾 End Session?\n\n' +
+        'Your Score: $' + playerScore.toLocaleString() + '\n' +
+        'AI Score: $' + aiScore.toLocaleString() + '\n\n' +
+        'This will save your score and return you to the dashboard.'
+      );
+      
+      if (confirmed) {
+        reportJeopardyScore(playerScore, aiScore);
+      }
+    } else {
+      console.log('❌ Could not find score elements');
+      alert('❌ Error: Could not read scores from page.');
+    }
+  };
+  
+  document.body.appendChild(btn);
+  console.log('✅ End Session button created');
+}
+
+// Create TEST button (for debugging)
+function createTestButton() {
+  const btn = document.createElement('button');
+  btn.innerHTML = '🧪 TEST';
+  btn.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 99999;
+    padding: 10px 20px;
+    background: #ef4444;
+    color: white;
+    border: 2px solid white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-family: system-ui, sans-serif;
+  `;
+  
+  btn.onclick = function() {
+    console.log('🧪 TEST button clicked - simulating 60% win');
+    reportJeopardyScore(1200, 800);
+  };
+  
+  document.body.appendChild(btn);
+  console.log('✅ Test button created');
+}
+
+// Initialize when page loads
+window.addEventListener('DOMContentLoaded', function() {
+  console.log('🎮 Jeopardy XP Integration Loaded');
+  
+  // Wait a bit for the game to fully load
+  setTimeout(function() {
+    createEndSessionButton();
+    createTestButton();
+    console.log('✅ All buttons ready');
+  }, 1500);
+});
+
+// Make function globally accessible
+window.reportJeopardyScore = reportJeopardyScore;
+</script>
+
+<style>
+/* Pulse animation for End Session button */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.8);
+  }
+}
+
+#endSessionBtn {
+  animation: pulse 2s infinite;
+}
+</style>  
 </body>
 </html>
