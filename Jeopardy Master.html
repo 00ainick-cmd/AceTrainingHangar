@@ -1714,5 +1714,42 @@ function reportJeopardyScore(playerScore, aiScore) {
 // EXAMPLE: When game ends, call this:
 // reportJeopardyScore(1200, 800);  // Player won with 1200 points vs AI's 800
 </script>
+<script>
+// Report Jeopardy score to main page
+function reportJeopardyScore(playerScore, aiScore) {
+  const totalScore = playerScore + aiScore;
+  const percentage = totalScore > 0 ? Math.round((playerScore / totalScore) * 100) : 0;
+  
+  console.log('🎮 Jeopardy completed:', percentage + '%');
+  
+  try {
+    if (window.parent && window.parent.completeModule) {
+      window.parent.completeModule('jeopardy', percentage);
+      return;
+    }
+  } catch(e) {
+    console.log('Cannot access parent page');
+  }
+  
+  try {
+    window.parent.postMessage({
+      type: 'moduleComplete',
+      module: 'jeopardy',
+      score: percentage
+    }, '*');
+  } catch(e) {}
+}
+
+// TEST BUTTON for debugging
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.createElement('button');
+  btn.innerHTML = '🧪 TEST SCORE';
+  btn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:99999;padding:12px 24px;background:#f43f5e;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
+  btn.onclick = () => reportJeopardyScore(1200, 800);
+  document.body.appendChild(btn);
+});
+
+window.reportJeopardyScore = reportJeopardyScore;
+</script>  
 </body>
 </html>
