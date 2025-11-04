@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CAET Pre-Assessment</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & Babel for JSX in browser -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Chart.js for Radar Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <style>
+        /*
+         * INLINE STYLES FOR RETRO 90s THEME
+         * These styles complement TailwindCSS for the specific retro look.
+         */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0e1a; /* Midnight */
+            color: #eaf2ff; /* Text */
+        }
+
+        .font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        /* CRT Screen Effect Container */
+        .crt-screen {
+            position: relative;
+            overflow: hidden;
+            background-color: #0b0f2b; /* Navy */
+            border: 4px solid #0a0e1a;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(51, 246, 255, 0.1), 0 0 20px rgba(51, 246, 255, 0.1), inset 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        /* Scanlines Overlay */
+        .crt-screen::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            z-index: 2;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
+        }
+        
+        /* CRT Flicker Animation */
+        @keyframes flicker {
+          0% { opacity: 0.2; }
+          20% { opacity: 1; }
+          40% { opacity: 0.4; }
+          60% { opacity: 1; }
+          80% { opacity: 0.3; }
+          100% { opacity: 1; }
+        }
+
+        /* Text Glow Effect */
+        .text-glow-cyan { text-shadow: 0 0 5px #33f6ff, 0 0 10px #33f6ff; }
+        .text-glow-magenta { text-shadow: 0 0 5px #ff68d7, 0 0 10px #ff68d7; }
+        .text-glow-lime { text-shadow: 0 0 5px #a8ff60, 0 0 10px #a8ff60; }
+
+        /* Skeuomorphic Button Style */
+        .btn-retro {
+            border: 2px solid #0a0e1a;
+            border-bottom-color: #9fb1d6;
+            border-right-color: #9fb1d6;
+            transition: all 150ms ease-out;
+        }
+        .btn-retro:active {
+            border-top-color: #9fb1d6;
+            border-left-color: #9fb1d6;
+            border-bottom-color: #0a0e1a;
+            border-right-color: #0a0e1a;
+            transform: translateY(1px);
+        }
+
+        /* Custom Focus Ring */
+        .focus-ring-cyan:focus-visible {
+            outline: 2px solid #33f6ff;
+            outline-offset: 2px;
+            box-shadow: 0 0 8px #33f6ff;
+        }
+        
+        /* Custom Radio Button */
+        input[type="radio"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: transparent;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border: 0.15em solid currentColor;
+            border-radius: 50%;
+            transform: translateY(-0.075em);
+            display: grid;
+            place-content: center;
+        }
+        input[type="radio"]::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em #33f6ff;
+        }
+        input[type="radio"]:checked::before {
+            transform: scale(1);
+        }
+
+        /* Hide scrollbar but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-midnight antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useReducer, useRef } = React;
+        
+        // ================================================================================= //
+        // == CONFIGURATION & QUESTION BANK                                               == //
+        // == Edit brand info, colors, scoring, and questions here.                       == //
+        // ================================================================================= //
+
+        const CONFIG = {
+          cutScore: 80,
+          timeLimitMinutes: 45,
+          brand: {
+            title: "CAET Pre-Assessment",
+            tagline: "It’s not rocket science.",
+            org: "Ace Avionics Training"
+          },
+          // You can edit colors here. They are used via Tailwind's arbitrary value support e.g., bg-[var(--navy)]
+          palette: {
+            navy: "#0b0f2b",
+            midnight: "#0a0e1a",
+            cyan: "#33f6ff",
+            magenta: "#ff68d7",
+            lime: "#a8ff60",
+            amber: "#ffc857",
+            text: "#eaf2ff",
+            muted: "#9fb1d6"
+          }
+        };
+
+        // TODO: PASTE YOUR QUESTION BANK JSON HERE
+        const BANK = {
+          "version": "caet-pre-v3.1",
+          "metadata": {
+            "title": "CAET Pre-Assessment",
+            "items_total": 40,
+            "time_limit_minutes": 45,
+            "blueprint": [
+              {"id":"D1","name":"Regulations & Forms","count":5},
+              {"id":"D2","name":"Aircraft Handling & Safety","count":5},
+              {"id":"D3","name":"Fundamentals of Electricity (DC+AC+Semiconductors)","count":10},
+              {"id":"D4","name":"Aircraft Electrical System","count":6},
+              {"id":"D5","name":"Aircraft Wiring","count":6},
+              {"id":"D6","name":"Digital Electronics","count":4},
+              {"id":"D7","name":"CNS Systems","count":4}
+            ],
+            "cut_score_percent": 80
+          },
+          "items": [
+            {
+              "id": "D1-001",
+              "domain_id": "D1",
+              "bloom": "Understand",
+              "stem": "What is the primary purpose of an entry in an aircraft's permanent maintenance record or logbook?",
+              "options": [
+                {"id":"A","text":"To provide a troubleshooting history for the pilot","correct":false,"rationale":"This is a secondary benefit, not the primary legal purpose."},
+                {"id":"B","text":"To create a legal record of work performed and approval for return to service","correct":true,"rationale":"The logbook entry is the legal certification that the work was done in accordance with applicable rules and the aircraft is airworthy."},
+                {"id":"C","text":"To track the time and materials used for customer billing","correct":false,"rationale":"This is tracked on the work order or invoice, not in the aircraft's permanent legal record."},
+                {"id":"D","text":"To document which technician is responsible for future problems","correct":false,"rationale":"While it provides traceability, its primary purpose is certification of airworthiness, not assignment of future blame."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A, C, and D are all plausible secondary functions of maintenance records, but B is the primary legal and safety purpose.",
+              "skills": ["Documentation","Compliance","Return to Service"]
+            },
+            {
+              "id": "D1-002",
+              "domain_id": "D1",
+              "bloom": "Remember",
+              "stem": "What does an FAA Form 8130-3 or EASA Form 1 (Authorized Release Certificate) represent when attached to a new component?",
+              "options": [
+                {"id":"A","text":"It is the invoice and receipt for the part","correct":false,"rationale":"This is a financial document, not an airworthiness certificate."},
+                {"id":"B","text":"It is the installation instruction manual for the part","correct":false,"rationale":"This is separate (e.g., CMM or AMM). The tag is a certificate of conformity."},
+                {"id":"C","text":"It is the warranty card to be filled out by the technician","correct":false,"rationale":"Warranty is a commercial matter, not an airworthiness one."},
+                {"id":"D","text":"It is the certification that the part is airworthy and conforms to its design","correct":true,"rationale":"This tag is the part's 'birth certificate' or 'passport,' attesting to its airworthy status and traceability to an approved manufacturer."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "All options are types of paperwork associated with parts, but only the 8130/Form 1 is the legal airworthiness certification.",
+              "skills": ["Parts & Materials","Documentation","Airworthiness"]
+            },
+            {
+              "id": "D1-003",
+              "domain_id": "D1",
+              "bloom": "Apply",
+              "stem": "A technician installs a new GPS/COM system using a Supplemental Type Certificate (STC). What documentation is required to approve the aircraft for return to service?",
+              "options": [
+                {"id":"A","text":"A logbook entry stating the STC was followed and a Form 337","correct":true,"rationale":"An STC is a 'major alteration' and requires both a logbook entry and a completed Form 337 (or equivalent authority form) describing the alteration."},
+                {"id":"B","text":"A logbook entry only, since the STC is already approved data","correct":false,"rationale":"This is incomplete. While an STC is approved data, its installation is a major alteration requiring a Form 337."},
+                {"id":"C","text":"A Form 337 only, as it replaces the need for a logbook entry","correct":false,"rationale":"This is incorrect. The logbook must contain an entry that references the Form 337 and certifies the return to service."},
+                {"id":"D","text":"An 8130-3 tag for the aircraft, documenting the new system","correct":false,"rationale":"An 8130-3 is for components, not for the entire aircraft after a major alteration."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "All options involve real documents, but the combination of a logbook entry AND a Form 337 is required for a major alteration via STC.",
+              "skills": ["Documentation","Compliance","STC","Form 337"]
+            },
+            {
+              "id": "D1-004",
+              "domain_id": "D1",
+              "bloom": "Analyze",
+              "stem": "A technician completes all steps on a work order, but notices the inspector missed signing one of the required inspection items (RII). What is the correct next step?",
+              "options": [
+                {"id":"A","text":"Sign off the work order, as the work is done and the RII is the inspector's problem","correct":false,"rationale":"This is a compliance violation. An incomplete work order cannot be closed, and the aircraft cannot be returned to service."},
+                {"id":"B","text":"Ask the inspector to sign it without re-inspecting, since the work is already closed up","correct":false,"rationale":"This is a serious violation (falsification) and compromises safety. The inspection must be properly performed."},
+                {"id":"C","text":"Notify the inspector that the signature is missing so the inspection can be properly performed and signed","correct":true,"rationale":"The work cannot be certified as complete without all required inspections. The technician must stop and ensure the compliance loop is closed."},
+                {"id":"D","text":"Sign the RII block for the inspector, with their verbal permission, to avoid a delay","correct":false,"rationale":"This is falsification of a maintenance record and is illegal. Only the authorized inspector can sign an RII."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "B and D are tempting shortcuts under pressure ('human factors'), but C is the only legal and safe choice. A ignores the team responsibility for compliance.",
+              "skills": ["Compliance","RII","Human Factors","Documentation"]
+            },
+            {
+              "id": "D1-005",
+              "domain_id": "D1",
+              "bloom": "Apply",
+              "stem": "A technician is performing a task and finds the procedure in the Aircraft Maintenance Manual (AMM) is unclear and seems to contradict the aircraft's configuration. What is the correct action?",
+              "options": [
+                {"id":"A","text":"Continue with the task, using their best judgment to interpret the manual","correct":false,"rationale":"This is a 'human factor' error (not following procedures) and can lead to an unairworthy condition. Best judgment is not approved data."},
+                {"id":"B","text":"Stop work and consult a lead technician or quality assurance to resolve the discrepancy","correct":true,"rationale":"Maintenance must be performed in accordance with approved data. If the data is ambiguous or incorrect, work must stop until a clarification is obtained."},
+                {"id":"C","text":"Search online forums for how other technicians have handled the same problem","correct":false,"rationale":"Online forums are not 'approved data' and must never be used as a basis for maintenance."},
+                {"id":"D","text":"Disassemble the components as needed until the manual procedure makes sense","correct":false,"rationale":"This is 'shotgun' maintenance and risks damaging components or performing work that is not authorized."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A is a tempting shortcut. C is a common but non-compliant modern habit. B is the only action that ensures compliance and safety.",
+              "skills": ["Technical Data","Compliance","Human Factors"]
+            },
+            {
+              "id": "D2-001",
+              "domain_id": "D2",
+              "bloom": "Remember",
+              "stem": "In aircraft maintenance, what does the term 'FOD' stand for?",
+              "options": [
+                {"id":"A","text":"Flight Operations Data","correct":false,"rationale":"This relates to flight parameters, not maintenance debris."},
+                {"id":"B","text":"Foreign Object Debris","correct":true,"rationale":"FOD refers to any item (tools, wire clippings, hardware, etc.) that is left behind and can cause damage or system failure."},
+                {"id":"C","text":"Fastener Orifice Diameter","correct":false,"rationale":"This is a hardware specification, not a general safety term."},
+                {"id":"D","text":"Final Operations Document","correct":false,"rationale":"This relates to paperwork, not physical hazards."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "The distractors use plausible aviation-related words, but FOD specifically refers to debris.",
+              "skills": ["Safety","FOD"]
+            },
+            {
+              "id": "D2-002",
+              "domain_id": "D2",
+              "bloom": "Apply",
+              "stem": "A technician is about to remove a digital LRU (Line Replaceable Unit) from an aircraft. What is the *most* critical first step to prevent damage to the unit?",
+              "options": [
+                {"id":"A","text":"Ensure the aircraft's battery is fully charged","correct":false,"rationale":"Battery charge is irrelevant to removing a unit from a powered-down aircraft."},
+                {"id":"B","text":"Connect a certified, grounded ESD wrist strap to their person","correct":true,"rationale":"Digital LRUs are highly sensitive to Electrostatic Discharge (ESD), which can cause latent or catastrophic failure. Grounding is mandatory *before* touching the unit."},
+                {"idD":"C","text":"Have the replacement unit's 8130-3 form ready for inspection","correct":false,"rationale":"This is a required step for installation, but it does not prevent damage during *removal*."},
+                {"id":"D","text":"Disconnect the largest cannon plug first to release tension","correct":false,"rationale":"This is a physical action that is secondary to the primary ESD safety precaution."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "C and D are real steps in the overall replacement process, but B is the critical *safety* step that must be done *first* to prevent damage.",
+              "skills": ["ESD","Handling","Safety"]
+            },
+            {
+              "id": "D2-003",
+              "domain_id": "D2",
+              "bloom": "Remember",
+              "stem": "In aviation maintenance, the 'Dirty Dozen' refers to what?",
+              "options": [
+                {"id":"A","text":"The twelve most common tools that are lost or left as FOD","correct":false,"rationale":"This is related to tool control, but not the 'Dirty Dozen.'"},
+                {"id":"B","text":"The twelve most common maintenance-related accidents","correct":false,"rationale":"These are outcomes, not the root causes."},
+                {"id":"C","text":"The twelve most common human factors that lead to errors","correct":true,"rationale":"The 'Dirty Dozen' are 12 root causes of error (e.g., Fatigue, Pressure, Distraction, Lack of Communication) that must be mitigated."},
+                {"id":"D","text":"The twelve most common corrosive compounds found on an airframe","correct":false,"rationale":"This is related to corrosion control, not human error."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "All options are plausible maintenance-related lists, but the 'Dirty Dozen' specifically refers to human factors.",
+              "skills": ["Human Factors","Safety"]
+            },
+            {
+              "id": "D2-004",
+              "domain_id": "D2",
+              "bloom": "Analyze",
+              "stem": "A technician accidentally drops a calibrated torque wrench on the concrete hangar floor. What is the correct next step?",
+              "options": [
+                {"id":"A","text":"Wipe it off and continue the job, as it was a short drop","correct":false,"rationale":"This is a significant risk. An impact can knock a torque wrench out of calibration, leading to improper torque and potential component failure."},
+                {"id":"B","text":"Check the torque on a nearby bolt to see if it 'feels' right","correct":false,"rationale":"This is not a valid calibration check and is extremely unsafe."},
+                {"id":"C","text":"Remove the tool from service and tag it for a calibration check","correct":true,"rationale":"Any precision tool that receives an impact must be assumed to be out of tolerance until proven otherwise by a calibration lab. This is a critical quality and safety step."},
+                {"id":"D","text":"Use the wrench only for non-critical bolts until the end of the shift","correct":false,"rationale":"This is poor judgment, as it leaves a potentially faulty tool in circulation and relies on subjective 'criticality.'"}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A and D are tempting shortcuts to avoid delays ('Pressure' - a human factor), but C is the only correct action to ensure quality and safety.",
+              "skills": ["Tools & Calibration","Safety","Judgment"]
+            },
+            {
+              "id": "D2-005",
+              "domain_id": "D2",
+              "bloom": "Apply",
+              "stem": "A technician's tool shadow board is missing a 1/4-inch socket at the end of a job. The socket is not in their pocket or personal toolbox. What is the correct action?",
+              "options": [
+                {"id":"A","text":"Report the socket as lost and buy a new one the next day","correct":false,"rationale":"This ignores the immediate and critical safety threat: the socket is now FOD."},
+                {"id":"B","text":"Borrow a socket from another tech to fill the board so the shift can end","correct":false,"rationale":"This is falsification of tool control and hides a serious safety risk."},
+                {"id":"C","text":"Initiate a FOD search of the work area and aircraft *before* the aircraft is moved or returned to service","correct":true,"rationale":"Tool control exists to prevent FOD. A missing tool must be treated as a safety-of-flight risk and be found before the aircraft is considered airworthy."},
+                {"id":"D","text":"Assume the socket was taken by another technician and will be returned later","correct":false,"rationale":"This is a dangerous assumption ('Complacency') and violates the principle of positive tool control."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A, B, and D are all forms of normalization of deviance ('Pressure', 'Complacency') that bypass the safety system. C is the only correct, safe action.",
+              "skills": ["FOD","Safety","Tool Control","Human Factors"]
+            },
+            {
+              "id": "D3-001",
+              "domain_id": "D3",
+              "bloom": "Apply",
+              "stem": "Using Ohm's Law, how much current (I) will flow if a 28 VDC source is connected to a 4-ohm (Ω) resistor?",
+              "options": [
+                {"id":"A","text":"112 Amps","correct":false,"rationale":"This is V * R (28 * 4). The correct formula is V / R."},
+                {"id":"B","text":"7 Amps","correct":true,"rationale":"Ohm's Law is I = V / R.  I = 28 Volts / 4 Ohms = 7 Amps."},
+                {"id":"C","text":"0.14 Amps","correct":false,"rationale":"This is R / V (4 / 28). The correct formula is V / R."},
+                {"id":"D","text":"32 Amps","correct":false,"rationale":"This is V + R (28 + 4). This is not Ohm's Law."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "The distractors are based on common misapplications of the Ohm's Law formula (multiplying instead of dividing, or inverting the division).",
+              "skills": ["Ohm's Law","DC Theory","Calculation"]
+            },
+            {
+              "id": "D3-002",
+              "domain_id": "D3",
+              "bloom": "Apply",
+              "stem": "A circuit draws 3 Amps of current when connected to a 12 VDC source. What is the total resistance (R) of the circuit?",
+              "options": [
+                {"id":"A","text":"36 Ohms","correct":false,"rationale":"This is V * I (12 * 3). The correct formula is V / I."},
+                {"id":"B","text":"9 Ohms","correct":false,"rationale":"This is V - I (12 - 3). This is not Ohm's Law."},
+                {"id":"C","text":"0.25 Ohms","correct":false,"rationale":"This is I / V (3 / 12). The correct formula is V / I."},
+                {"id":"D","text":"4 Ohms","correct":true,"rationale":"Ohm's Law is R = V / I.  R = 12 Volts / 3 Amps = 4 Ohms."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "The distractors are based on common misapplications of the Ohm's Law formula (multiplying instead of dividing, or inverting the division).",
+              "skills": ["Ohm's Law","DC Theory","Calculation"]
+            },
+            {
+              "id": "D3-003",
+              "domain_id": "D3",
+              "bloom": "Understand",
+              "stem": "In a simple DC circuit, if the voltage remains constant but the resistance doubles, what happens to the current?",
+              "options": [
+                {"id":"A","text":"It is cut in half","correct":true,"rationale":"Per Ohm's Law (I = V/R), current is *inversely* proportional to resistance. If R doubles, I is halved."},
+                {"id":"B","text":"It doubles","correct":false,"rationale":"This would be true if resistance was halved, not doubled. This confuses the inverse relationship."},
+                {"id":"C","text":"It stays the same","correct":false,"rationale":"Current only stays the same if both voltage and resistance are constant or change proportionally."},
+                {"id":"D","text":"It drops to zero","correct":false,"rationale":"It would only drop to zero if the resistance became infinite (an open circuit)."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "B is a common error, confusing the inverse relationship for a direct one. D confuses high resistance with infinite resistance.",
+              "skills": ["Ohm's Law","DC Theory"]
+            },
+            {
+              "id": "D3-004",
+              "domain_id": "D3",
+              "bloom": "Remember",
+              "stem": "What does Kirchhoff's Voltage Law (KVL) state?",
+              "options": [
+                {"id":"A","text":"The total current entering a node must equal the total current leaving it","correct":false,"rationale":"This is Kirchhoff's Current Law (KCL)."},
+                {"id":"B","text":"The sum of all voltage drops around any closed loop must equal the source voltage","correct":true,"rationale":"KVL is a law of conservation of energy, stating that the sum of voltage drops (loads) must equal the sum of voltage sources in a loop."},
+                {"id":"C","text":"Total circuit resistance is the sum of all individual resistances","correct":false,"rationale":"This is true only for series circuits, it is not KVL."},
+                {"id":"D","text":"Voltage in a parallel circuit is the same across all branches","correct":false,"rationale":"This is a characteristic of parallel circuits, but it is not KVL."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A is the most tempting distractor, as it is the 'other' Kirchhoff's law (KCL). C and D are other basic electrical rules.",
+              "skills": ["Kirchhoff's Laws","DC Theory"]
+            },
+            {
+              "id": "D3-005",
+              "domain_id": "D3",
+              "bloom": "Apply",
+              "stem": "Three resistors are in series: R1=10Ω, R2=20Ω, and R3=30Ω. What is the total resistance (Rt) of the circuit?",
+              "options": [
+                {"id":"A","text":"60 Ohms","correct":true,"rationale":"For series circuits, total resistance is the sum of the individual resistances. Rt = R1 + R2 + R3 = 10 + 20 + 30 = 60Ω."},
+                {"id":"B","text":"5.45 Ohms","correct":false,"rationale":"This is the calculation for resistors in *parallel* (1 / (1/10 + 1/20 + 1/30))."},
+                {"id":"C","text":"30 Ohms","correct":false,"rationale":"This is just the value of the largest resistor, not the total."},
+                {"id":"D","text":"6000 Ohms","correct":false,"rationale":"This is the product (10 * 20 * 30), not the sum."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "B is the most common error, applying the parallel formula to a series circuit. D misapplies the formula as multiplication.",
+              "skills": ["Series Circuits","DC Theory","Calculation"]
+            },
+            {
+              "id": "D3-006",
+              "domain_id": "D3",
+              "bloom": "Apply",
+              "stem": "Two 10-ohm (Ω) resistors are connected in parallel. What is their total equivalent resistance?",
+              "options": [
+                {"id":"A","text":"20 Ohms","correct":false,"rationale":"This is the calculation for resistors in *series* (R1 + R2)."},
+                {"id":"B","text":"10 Ohms","correct":false,"rationale":"This would only be true if the second resistor had infinite resistance."},
+                {"id":"C","text":"5 Ohms","correct":true,"rationale":"For parallel resistors: 1/Rt = 1/R1 + 1/R2.  1/Rt = 1/10 + 1/10 = 2/10. Rt = 10/2 = 5Ω. (Shortcut: for two equal resistors, the total is half)."},
+                {"id":"D","text":"100 Ohms","correct":false,"rationale":"This is the product (R1 * R2), not the parallel formula."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A is the most common error, applying the series formula to a parallel circuit.",
+              "skills": ["Parallel Circuits","DC Theory","Calculation"]
+            },
+            {
+              "id": "D3-007",
+              "domain_id": "D3",
+              "bloom": "Understand",
+              "stem": "What is the primary function of a diode in an electrical circuit?",
+              "options": [
+                {"id":"A","text":"To store electrical charge","correct":false,"rationale":"This is the function of a capacitor."},
+                {"id":"B","text":"To limit current flow in both directions","correct":false,"rationale":"This is the function of a resistor."},
+                {"id":"C","text":"To allow current to flow easily in one direction but block it in the other","correct":true,"rationale":"A diode is a semiconductor 'one-way valve' for current, allowing flow when forward-biased and blocking it when reverse-biased."},
+                {"id":"D","text":"To amplify a small signal into a larger one","correct":false,"rationale":"This is the function of a transistor or amplifier."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A, B, and D are all real functions of other basic electronic components that are often confused with diodes.",
+              "skills": ["Semiconductors","DC Theory"]
+            },
+            {
+              "id": "D3-008",
+              "domain_id": "D3",
+              "bloom": "Remember",
+              "stem": "What is the fundamental difference between Direct Current (DC) and Alternating Current (AC)?",
+              "options": [
+                {"id":"A","text":"DC is high voltage and AC is low voltage","correct":false,"rationale":"Both AC and DC can exist at any voltage level."},
+                {"id":"B","text":"DC flows in one direction, while AC periodically reverses direction","correct":true,"rationale":"Direct Current (DC) has a constant polarity. Alternating Current (AC) changes its polarity (e.g., 60 or 400 times per second/Hz)."},
+                {"id":"C","text":"DC is used for power, while AC is used for signals","correct":false,"rationale":"Both are used for power (e.g., 28VDC bus, 115VAC 400Hz bus) and signals."},
+                {"id":"D","text":"DC is generated by batteries, while AC is generated by alternators","correct":false,"rationale":"This is partially true but not the fundamental difference. Batteries are DC, but alternators produce AC which is then *rectified* to DC for a DC bus."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "D is tempting as it relates to sources, but B is the correct *definition* of the difference in flow.",
+              "skills": ["AC Theory","DC Theory"]
+            },
+            {
+              "id": "D3-009",
+              "domain_id": "D3",
+              "bloom": "Understand",
+              "stem": "What is the primary function of a capacitor in a DC circuit?",
+              "options": [
+                {"id":"A","text":"To oppose a change in current","correct":false,"rationale":"This is the primary function of an inductor."},
+                {"id":"B","text":"To block DC current entirely once charged and store electrical energy","correct":true,"rationale":"A capacitor acts as an open circuit to steady-state DC, but it stores energy in an electric field. It passes AC."},
+                {"id":"C","text":"To convert AC voltage to DC voltage","correct":false,"rationale":"This is the function of a rectifier (made of diodes)."},
+                {"id":"D","text":"To create a steady magnetic field","correct":false,"rationale":"This is done by an inductor or electromagnet."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A (inductor) is the 'opposite' component and a common point of confusion. C (rectifier) is related, as capacitors are used *in* rectifier circuits for filtering.",
+              "skills": ["Components","DC Theory","AC Theory"]
+            },
+            {
+              "id": "D3-010",
+              "domain_id": "D3",
+              "bloom": "Apply",
+              "stem": "A technician uses a multimeter's 'diode check' function to test a simple diode. The meter reads '0.6V' with the leads one way, and 'O.L.' (Open Line) with the leads reversed. What does this indicate?",
+              "options": [
+                {"id":"A","text":"The diode is shorted and must be replaced","correct":false,"rationale":"A shorted diode would read near 0.0V in both directions."},
+                {"id":"B","text":"The diode is open and must be replaced","correct":false,"rationale":"An open diode would read 'O.L.' in both directions."},
+                {"id":"C","text":"The diode is functioning correctly","correct":true,"rationale":"This is the correct signature: a low forward-voltage drop (e.g., 0.6V for silicon) in one direction (forward-biased) and an open circuit (reverse-biased) in the other."},
+                {"id":"D","text":"The diode has high resistance and is degraded","correct":false,"rationale":"A high resistance reading would be an unusual voltage (e.g., >1.0V) or a non-open reading in the reverse direction."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A and B represent the two common failure modes (shorted/open) that a technician must be able to distinguish from a good part.",
+              "skills": ["Semiconductors","Troubleshooting","Multimeter"]
+            },
+            {
+              "id": "D4-001",
+              "domain_id": "D4",
+              "bloom": "Analyze",
+              "stem": "With the avionics master on, a 28 VDC bus reads 22 V. When the master is turned off, the bus reads 28 V. What is the most likely cause?",
+              "options": [
+                {"id":"A","text":"An open circuit in the feeder wire to the bus","correct":false,"rationale":"An open circuit would result in 0V on the bus, not a 22V sag."},
+                {"id":"B","text":"Excessive series resistance in a connection or wiring to the bus","correct":true,"rationale":"This is a classic symptom of a high-resistance connection (corrosion, loose lug). The voltage drop (V=I*R) only appears when current (I) is flowing (avionics on)."},
+                {"id":"C","text":"A generator overvoltage condition","correct":false,"rationale":"An overvoltage would cause the bus voltage to be *higher* than 28V, not lower."},
+                {"id":"D","text":"A hard short to ground on an avionics circuit","correct":false,"rationale":"A hard short would draw massive current and almost certainly trip the main bus circuit breaker, resulting in 0V."}
+              ],
+              "difficulty": "H",
+              "why_distractors_are_tempting": "A and D are common faults, but they result in 0V, not a voltage sag under load. C is the opposite symptom. B is the only fault that explains a load-dependent voltage drop.",
+              "skills": ["Troubleshooting","Voltage Drop","Ohm's Law","Bus Faults"]
+            },
+            {
+              "id": "D4-002",
+              "domain_id": "D4",
+              "bloom": "Understand",
+              "stem": "What is the primary function of the main aircraft battery in a small aircraft electrical system?",
+              "options": [
+                {"id":"A","text":"To provide the main source of 115VAC 400Hz power","correct":false,"rationale":"The battery is a DC source. AC power comes from an inverter or alternator."},
+                {"id":"B","text":"To filter ripple voltage from the alternator output","correct":false,"rationale":"While it has that minor effect, its primary function is storage, not filtering."},
+                {"id":"C","text":"To provide power for engine starting and for emergency use","correct":true,"rationale":"The battery's two main jobs are to provide high current for starting and to power essential systems if the alternator/generator fails."},
+                {"id":"D","text":"To act as the primary voltage regulator for the bus","correct":false,"rationale":"This is the job of the Voltage Regulator or Generator Control Unit (GCU)."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "B and D are real functions within the electrical system, but they are performed by other components (capacitors, voltage regulator).",
+              "skills": ["Power Generation","Battery","System Knowledge"]
+            },
+            {
+              "id": "D4-003",
+              "domain_id": "D4",
+              "bloom": "Remember",
+              "stem": "What is the purpose of a circuit breaker in an aircraft electrical system?",
+              "options": [
+                {"id":"A","text":"To act as a main 'on/off' switch for all systems","correct":false,"rationale":"While it *can* be used as a switch, its *primary* purpose is protection."},
+                {"id":"B","text":"To provide resettable overcurrent protection for a circuit","correct":true,"rationale":"It is a safety device designed to 'trip' (open) automatically if current exceeds a safe level, protecting the wire and component. It can then be reset."},
+                {"id":"C","text":"To convert AC to DC for sensitive electronics","correct":false,"rationale":"This is the function of a rectifier."},
+                {"id":"D","text":"To regulate the voltage to a specific component","correct":false,"rationale":"This is the function of a voltage regulator."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A is a plausible but secondary function. C and D are other electrical functions that are often confused.",
+              "skills": ["Circuit Protection","Components","Safety"]
+            },
+            {
+              "id": "D4-004",
+              "domain_id": "D4",
+              "bloom": "Apply",
+              "stem": "During flight, a circuit breaker for a non-essential system (e.g., cabin reading light) trips. What is the generally accepted 'next step'?",
+              "options": [
+                {"id":"A","text":"Immediately pull the breaker for the adjacent circuit to 'balance' the panel","correct":false,"rationale":"This is illogical and serves no purpose."},
+                {"id":"B","text":"Reset the breaker immediately and repeatedly until it holds","correct":false,"rationale":"Repeatedly resetting a breaker into a fault can cause a fire. This is extremely dangerous."},
+                {"id":"C","text":"Wait a brief cooling period, reset the breaker *once*, and if it trips again, do not touch it","correct":true,"rationale":"This is the standard procedure. It allows for a single reset in case of a nuisance trip, but a second trip confirms a hard fault."},
+                {"id":"D","text":"Land the aircraft immediately at the nearest airport","correct":false,"rationale":"This would be an overreaction for a non-essential item. The correct procedure is to reset once, then leave it."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "B is what an untrained person might do, but it is dangerous. D is an overreaction. C describes the correct, safe procedure.",
+              "skills": ["Circuit Protection","Troubleshooting","Judgment"]
+            },
+            {
+              "id": "D4-005",
+              "domain_id": "D4",
+              "bloom": "Understand",
+              "stem": "What is the function of a Transformer Rectifier Unit (TRU) in an aircraft electrical system?",
+              "options": [
+                {"id":"A","text":"It converts 28 VDC into 115 VAC 400Hz","correct":false,"rationale":"This is the function of a static *inverter*."},
+                {"id":"B","text":"It converts 115 VAC 400Hz into 28 VDC","correct":true,"rationale":"A TRU *transforms* (steps down) the AC voltage and then *rectifies* it (using diodes) into DC power to supply the main DC busses."},
+                {"id":"C","text":"It stores 28 VDC for emergency use","correct":false,"rationale":"This is the function of the battery."},
+                {"id":"D","text":"It regulates the 400Hz frequency of the AC generator","correct":false,"rationale":"This is the function of the generator's Constant Speed Drive (CSD) or control unit."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A is the exact opposite function (inverter), which is the most common point of confusion. C and D are other major system functions.",
+              "skills": ["Power Conversion","AC Theory","DC Theory","Components"]
+            },
+            {
+              "id": "D4-006",
+              "domain_id": "D4",
+              "bloom": "Analyze",
+              "stem": "A technician measures voltage on an avionics bus circuit breaker. The *input* terminal reads 28 VDC, but the *output* terminal reads 0 VDC. The breaker handle is in the 'ON' (closed) position. What is the most likely conclusion?",
+              "options": [
+                {"id":"A","text":"The component on that circuit is shorted to ground","correct":false,"rationale":"A short would cause the breaker to trip (open), but the input would still be 28V and the output 0V. This is a *possible* cause, but 'internally faulty' is a more direct conclusion from the readings."},
+                {"id":"B","text":"The circuit breaker is internally open (tripped or faulty)","correct":true,"rationale":"If the breaker is closed, it should act like a wire (28V in, 28V out). Since there is 28V in and 0V out, the breaker itself is open, either because it is tripped or it has failed internally."},
+                {"id":"C","text":"The main avionics bus is powered down","correct":false,"rationale":"This is incorrect. The input reading of 28V proves the main bus is powered *on*."},
+                {"id":"D","text":"The component on that circuit is turned off","correct":false,"rationale":"If the component is just turned off, its switch is open, but the breaker output terminal *itself* would still read 28V."}
+              ],
+              "difficulty": "H",
+              "why_distractors_are_tempting": "A is tempting, as a short *causes* a trip. But the *direct* diagnosis from the voltage readings is that the breaker is open. D is a common confusion between the breaker and the component's own switch.",
+              "skills": ["Troubleshooting","Circuit Protection","Bus Faults"]
+            },
+            {
+              "id": "D5-001",
+              "domain_id": "D5",
+              "bloom": "Apply",
+              "stem": "While stripping a 20 AWG wire, the technician accidentally nicks several strands. What is the correct action according to standard practices?",
+              "options": [
+                {"id":"A","text":"Solder the nicked area to strengthen it","correct":false,"rationale":"Soldering a nick is not an approved repair; it wicks under the insulation and creates a new weak point."},
+                {"id":"B","text":"Continue the termination, as a few nicks are acceptable","correct":false,"rationale":"Nicked strands are not acceptable. They reduce the wire's current capacity and create a high-resistance hot spot and a point of mechanical failure from vibration."},
+                {"id":"C","text":"Cut the wire at the nick and re-strip it properly","correct":true,"rationale":"The only acceptable solution is to remove the damaged portion of the wire and prepare it again, assuming service loops permit."},
+                {"id":"D","text":"Cover the nick with heat shrink and continue","correct":false,"rationale":"Heat shrink only insulates; it does not repair the broken conductor strands."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A, B, and D are all tempting shortcuts ('human factors') to avoid the rework of C, but they all lead to an unairworthy connection.",
+              "skills": ["Wiring","Termination","Safety"]
+            },
+            {
+              "id": "D5-002",
+              "domain_id": "D5",
+              "bloom": "Remember",
+              "stem": "What is the primary purpose of the 'positioner' or 'locator' on a MIL-spec crimping tool (e.g., M22520/1-01)?",
+              "options": [
+                {"id":"A","text":"To select the correct wire gauge for the crimp","correct":false,"rationale":"This is the function of the selector knob, which sets the crimp depth."},
+                {"id":"B","text":"To hold the contact pin/socket at the correct depth and alignment","correct":true,"rationale":"The positioner ensures the crimp occurs in the correct location on the contact's barrel, which is critical for a valid connection."},
+                {"id":"C","text":"To count the number of crimps performed for tool calibration","correct":false,"rationale":"No such feature exists; calibration is based on 'go/no-go' gauging."},
+                {"id":"D","text":"To strip the wire insulation to the correct length","correct":false,"rationale":"This is done by a separate wire stripper tool."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A is a very tempting distractor, as it's the *other* main adjustment on the tool. D is a related step in the process done by a different tool.",
+              "skills": ["Wiring","Termination","Tools & Calibration"]
+            },
+            {
+              "id": "D5-003",
+              "domain_id": "D5",
+              "bloom": "Apply",
+              "stem": "A technician installs a new coaxial cable but must bend it sharply (kink it) to fit behind a panel. Why is this an unacceptable practice?",
+              "options": [
+                {"id":"A","text":"The kink will cause the BNC connector to break","correct":false,"rationale":"The kink damages the *cable*, not necessarily the connector (though it puts stress on it)."},
+                {"id":"B","text":"The sharp bend can damage the wire's outer insulation","correct":false,"rationale":"This is a minor concern compared to the internal damage."},
+                {"id":"C","text":"The kink changes the cable's impedance, causing high VSWR and signal loss","correct":true,"rationale":"Kinking or violating the bend radius crushes the dielectric, changing the spacing between the center conductor and shield. This changes the impedance (e.g., from 50Ω), causing signal reflections (high VSWR) and poor RF performance."},
+                {"id":"D","text":"The sharp bend will cause the signal to 'leak' out of the cable","correct":false,"rationale":"Signal leakage is a shielding issue, not a bend radius issue. The problem is reflections, not leakage."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A and B are plausible physical consequences, but C describes the critical *electrical* reason why bend radius is a rule for RF cables.",
+              "skills": ["Coax","Wiring","RF Theory"]
+            },
+            {
+              "id": "D5-004",
+              "domain_id": "D5",
+              "bloom": "Apply",
+              "stem": "According to most aircraft standard practices, how should the shield of a twisted, shielded databus pair (like ARINC 429) be terminated?",
+              "options": [
+                {"id":"A","text":"Grounded at both the LRU and the bus junction","correct":false,"rationale":"Grounding at both ends creates a 'ground loop,' where stray currents can flow through the shield, *inducing* noise onto the data wires, not blocking it."},
+                {"id":"B","text":"Left 'floating' (unconnected) at both ends","correct":false,"rationale":"A floating shield does not protect against electrical field noise, as it has no path to drain the induced voltage."},
+                {"id":"C","text":"Grounded at one end only (typically the 'source' end)","correct":true,"rationale":"Grounding at one end provides a drain path for noise (Faraday cage) without creating a ground loop. This is the standard method."},
+                {"id":"D","text":"Spliced directly to the 'ground' wire of the data pair","correct":false,"rationale":"The data wires (A/B) are a balanced pair and do not have a 'ground' wire. Connecting the shield to them would corrupt the data."}
+              ],
+              "difficulty": "H",
+              "why_distractors_are_tempting": "A is a very common mistake for technicians unfamiliar with ground loops. B is the opposite, also incorrect. C is the specific, correct technique.",
+              "skills": ["Wiring","Shielding","Databus","ARINC 429"]
+            },
+            {
+              "id": "D5-005",
+              "domain_id": "D5",
+              "bloom": "Apply",
+              "stem": "A technician performs a continuity check on a newly installed wire, from pin-to-pin. The multimeter reads 0.2 ohms (Ω). What does this reading indicate?",
+              "options": [
+                {"id":"A","text":"The wire is open and must be replaced","correct":false,"rationale":"An open wire would read 'O.L.' or 'Infinity.'"},
+                {"id":"B","text":"The wire has a short circuit to ground","correct":false,"rationale":"This test (pin-to-pin) does not check for shorts to ground. That is an insulation resistance test."},
+                {"id":"C","text":"The wire has continuity and is acceptable","correct":true,"rationale":"A reading near zero ohms (e.g., < 1.0Ω, allowing for lead resistance) indicates a good, complete path for current. This is a successful continuity check."},
+                {"id":"D","text":"The wire has high resistance and is faulty","correct":false,"rationale":"0.2Ω is a very *low* resistance, which is the desired reading for a conductor."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A and D are opposite and incorrect interpretations. B describes a different fault (short) that requires a different test.",
+              "skills": ["Troubleshooting","Multimeter","Wiring"]
+            },
+            {
+              "id": "D5-006",
+              "domain_id": "D5",
+              "bloom": "Analyze",
+              "stem": "A technician uses an insulation resistance tester ('megger') to check a wire bundle. The meter reads 2 megohms (MΩ). What is the correct conclusion?",
+              "options": [
+                {"id":"A","text":"The bundle is good; 2 MΩ is a very high resistance","correct":false,"rationale":"While 2 MΩ sounds high, it is typically *below* the minimum acceptable standard for avionics (which is often 100 MΩ or 'infinity'). This indicates a problem."},
+                {"id":"B","text":"The bundle has a hard short to ground","correct":false,"rationale":"A hard short would read near 0 ohms, not 2 megohms."},
+                {"id":"C","text":"The bundle's insulation is degraded and has failed the test","correct":true,"rationale":"This reading indicates a low insulation resistance (a 'leakage' path), likely due to moisture, chafing, or contamination. It is not a hard short, but it is unairworthy."},
+                {"id":"D","text":"The bundle has an open circuit","correct":false,"rationale":"This test does not check for open circuits (continuity). An open wire would still pass this test if its insulation was good."}
+              ],
+              "difficulty": "H",
+              "why_distractors_are_tempting": "A is the most tempting distractor, as 'mega' sounds good. But in the context of insulation, 2 MΩ is a failure. B is the opposite failure. D is a different test.",
+              "skills": ["Troubleshooting","Megger","Wiring","Insulation"]
+            },
+            {
+              "id": "D6-001",
+              "domain_id": "D6",
+              "bloom": "Understand",
+              "stem": "What is a primary characteristic of an ARINC 429 digital databus?",
+              "options": [
+                {"id":"A","text":"It is a bidirectional bus allowing many transmitters","correct":false,"rationale":"This describes busses like ARINC 427, 629, or CAN bus. ARINC 429 is unidirectional."},
+                {"id":"B","text":"It is a unidirectional (one-way) bus with only one transmitter","correct":true,"rationale":"ARINC 429 is a simplex bus. One transmitter (e.g., the GPS) 'talks' and one or more receivers (e.g., the EFIS) 'listen.'"},
+                {"id":"C","text":"It uses fiber optic cable for high-speed data","correct":false,"rationale":"This describes busses like ARINC 664 (AFDX) or 818. ARINC 429 uses a twisted, shielded copper pair."},
+                {"id":"D","text":"It uses the aircraft skin as a signal return path","correct":false,"rationale":"ARINC 429 uses a balanced, differential signal on two dedicated wires (A and B)."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A, C, and D describe other, more complex databus types. B is the correct, simple definition of 429.",
+              "skills": ["Databus","ARINC 429","Digital"]
+            },
+            {
+              "id": "D6-002",
+              "domain_id": "D6",
+              "bloom": "Apply",
+              "stem": "What is the *most* critical precaution a technician must take *before* touching the pins of a digital LRU connector?",
+              "options": [
+                {"id":"A","text":"Visually inspect the pins for any signs of corrosion","correct":false,"rationale":"This is a good practice, but it is not a *precaution* to prevent damage."},
+                {"id":"B","text":"Ensure they are grounded using an approved ESD wrist strap","correct":true,"rationale":"The pins are a direct path to the sensitive digital components. Touching them without being grounded can cause a catastrophic or latent ESD failure."},
+                {"id":"C","text":"Perform a continuity check on all pins to find shorts","correct":false,"rationale":"This is a troubleshooting step, and performing it without grounding *first* is dangerous to the unit."},
+                {"id":"D","text":"Verify the part number of the unit matches the work order","correct":false,"rationale":"This is a compliance step, not a safety precaution to protect the hardware."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A, C, and D are all real tasks. B is the only one that prevents the technician from *causing* damage.",
+              "skills": ["ESD","Handling","Safety","Digital"]
+            },
+            {
+              "id": "D6-003",
+              "domain_id": "D6",
+              "bloom": "Apply",
+              "stem": "A new ARINC 429 databus is installed, but the receiving LRU shows a 'NO DATA' or 'NAV FAIL' flag. The wiring has good continuity and no shorts. What is the most likely installation error?",
+              "options": [
+                {"id":"A","text":"The transmitter LRU has failed","correct":false,"rationale":"This is possible, but an *installation error* is more likely with a new install."},
+                {"id":"B","text":"The databus A and B wires are reversed at one end","correct":true,"rationale":"ARINC 429 uses a differential signal. Reversing the A/B polarity makes the data unreadable to the receiver, which is a very common installation error."},
+                {"id":"C","text":"The system is running at the wrong data speed","correct":false,"rationale":"Data speed is set inside the LRUs and is not an installation wiring error."},
+                {"id":"D","text":"The databus shield is grounded at one end","correct":false,"rationale":"This is the *correct* way to ground the shield. Grounding at both ends is an error, but reversing A/B is a more common cause of a 'NO DATA' flag."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A is a plausible fault, but B is a common *installation* fault. D is tempting because shield grounding is tricky, but it describes the *correct* procedure.",
+              "skills": ["Troubleshooting","ARINC 429","Databus","Wiring"]
+            },
+            {
+              "id": "D6-004",
+              "domain_id": "D6",
+              "bloom": "Understand",
+              "stem": "In digital electronics, what is a 'logic gate'?",
+              "options": [
+                {"id":"A","text":"A circuit that stores a single bit of memory (a '1' or '0')","correct":false,"rationale":"This is the function of a 'flip-flop' or 'latch.'"},
+                {"id":"B","text":"A device that converts an analog signal to a digital signal","correct":false,"rationale":"This is an Analog-to-Digital Converter (ADC)."},
+                {"id":"C","text":"An elementary circuit that performs a basic logical function (e.g., AND, OR, NOT)","correct":true,"rationale":"A logic gate is the fundamental building block that takes one or more binary inputs and produces a single binary output based on a simple rule."},
+                {"id":"D","text":"A fuse that protects a digital circuit from overvoltage","correct":false,"rationale":"This is a circuit protection device, not a logic device."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A and B are other common digital functions, making them plausible distractors.",
+              "skills": ["Digital Logic","Components"]
+            },
+            {
+              "id": "D7-001",
+              "domain_id": "D7",
+              "bloom": "Remember",
+              "stem": "What is the primary function of a VOR (VHF Omnidirectional Range) system?",
+              "options": [
+                {"id":"A","text":"To provide two-way voice communication with ATC","correct":false,"rationale":"This is the function of a VHF COM radio."},
+                {"id":"B","text":"To provide a magnetic bearing (radial) from a ground station","correct":true,"rationale":"VOR is a navigation (NAV) system that allows the pilot to determine their aircraft's bearing *relative to* the station."},
+                {"id":"C","text":"To provide distance information (DME) to a ground station","correct":false,"rationale":"This is the function of a Distance Measuring Equipment (DME) system. VOR/DME are often co-located but are separate systems."},
+                {"id":"D","text":"To provide lateral (left/right) guidance for an instrument landing","correct":false,"rationale":"This is the function of an ILS *Localizer*."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A, C, and D are all other CNS (Comm, Nav, Surveillance) functions, making them highly plausible distractors.",
+              "skills": ["NAV","CNS","VOR"]
+            },
+            {
+              "id": "D7-002",
+              "domain_id": "D7",
+              "bloom": "Apply",
+              "stem": "An aircraft's transponder and altitude reporting system fail their 24-month certification check. What is the operational consequence?",
+              "options": [
+                {"id":"A","text":"The aircraft is grounded and cannot be flown for any reason","correct":false,"rationale":"This is too broad. The aircraft can still be flown VFR in airspace that does not require a transponder."},
+                {"id":"B","text":"The aircraft can only be flown during daylight VFR conditions","correct":false,"rationale":"This is also not strictly true; it depends on the airspace."},
+                {"id":"C","text":"The aircraft may not be flown in airspace requiring a transponder (e.g., Class A, B, C)","correct":true,"rationale":"The 24-month check is required for IFR flight and for flight in most controlled airspace. The aircraft is now restricted from that airspace."},
+                {"id":"D","text":"The aircraft's VHF COM radios are also considered unairworthy","correct":false,"rationale":"The transponder (surveillance) system is separate from the COM (communication) system."}
+              ],
+              "difficulty": "M",
+              "why_distractors_are_tempting": "A and B are plausible but overly restrictive. C correctly identifies the consequence: the aircraft is restricted from specific airspace.",
+              "skills": ["Surveillance","Transponder","Compliance","Testing"]
+            },
+            {
+              "id": "D7-003",
+              "domain_id": "D7",
+              "bloom": "Analyze",
+              "stem": "A pilot reports 'COM 1 is all static' but 'COM 2 works perfectly.' Both radios are tuned to the same known-good frequency. What is the most likely cause of the fault?",
+              "options": [
+                {"id":"A","text":"The aircraft's audio panel is faulty","correct":false,"rationale":"While possible, if the audio panel failed, the pilot would likely hear *nothing*, not just static. It's also less likely than an antenna fault."},
+                {"id":"B","text":"The COM 1 antenna, coax, or BNC connector is faulty","correct":true,"rationale":"COM 1 and COM 2 are independent systems. Since COM 2 works, the problem is isolated to the COM 1 system. A bad antenna or coax connection is the most common cause of high static (noise) and poor reception."},
+                {"id":"C","text":"The aircraft's main static wicks are missing","correct":false,"rationale":"Missing static wicks would cause P-static (precipitation static), but it would likely affect *both* radios, not just COM 1."},
+                {"id":"D","text":"The pilot has the COM 1 squelch set incorrectly","correct":false,"rationale":"If the squelch was set too 'loose' (low), the pilot would hear static, but they would *also* hear transmissions. 'All static' implies no reception, which points to an antenna issue."}
+              ],
+              "difficulty": "H",
+              "why_distractors_are_tempting": "A, C, and D are all plausible-sounding issues, but B is the most likely, isolated fault that explains the *specific* symptom ('all static' on only one radio).",
+              "skills": ["Troubleshooting","COM","CNS","RF Theory"]
+            },
+            {
+              "id": "D7-004",
+              "domain_id": "D7",
+              "bloom": "Remember",
+              "stem": "What are the two primary guidance signals provided by a standard Instrument Landing System (ILS)?",
+              "options": [
+                {"id":"A","text":"VOR (radial) and DME (distance)","correct":false,"rationale":"These are en-route navigation aids, not landing aids."},
+                {"id":"B","text":"Localizer (lateral) and Glideslope (vertical)","correct":true,"rationale":"The Localizer provides left/right guidance to the runway centerline, and the Glideslope provides up/down guidance to the touchdown point."},
+                {"id":"C","text":"Transponder (code) and Altitude (Mode C)","correct":false,"rationale":"These are surveillance functions, not landing guidance."},
+                {"id":"D","text":"GPS (position) and WAAS (augmentation)","correct":false,"rationale":"This is a different type of approach (LPV or LNAV/VNAV), not a traditional ILS."}
+              ],
+              "difficulty": "E",
+              "why_distractors_are_tempting": "A, C, and D are all other avionics systems that are often confused with ILS.",
+              "skills": ["NAV","CNS","ILS"]
+            }
+          ]
+        };
+
+        // ================================================================================= //
+        // == APPLICATION LOGIC                                                           == //
+        // == No need to edit below this line.                                            == //
+        // ================================================================================= //
+        
+        const LOCAL_STORAGE_KEY = 'caet_pre_v3_state';
+        
+        // --- Sound Effects (Base64 encoded) ---
+        const SOUNDS = {
+            correct: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=', // Short blip
+            finish: 'data:audio/wav;base64,UklGRkoAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSZAAAAA/v/9/f39/f/9/v3+/v7+/f79/v79/v/+/f/+/v39//79/v4=' // Soft chime
+        };
+        
+        function playSound(soundKey) {
+            try {
+                const soundEnabled = JSON.parse(localStorage.getItem('caet_sound_enabled') || 'false');
+                if (soundEnabled && SOUNDS[soundKey]) {
+                    const audio = new Audio(SOUNDS[soundKey]);
+                    audio.volume = 0.2;
+                    audio.play();
+                }
+            } catch (e) {
+                console.error("Could not play sound", e);
+            }
+        }
+
+        // --- Data Sanitization & Validation ---
+        function sanitizeAndValidateBank(bank) {
+            const sanitizedItems = bank.items.map(item => {
+                const sanitizedOptions = item.options.map(opt => {
+                    if (opt.idD) { // Fix typo idD -> id
+                        return { ...opt, id: opt.idD };
+                    }
+                    return opt;
+                });
+                return { ...item, options: sanitizedOptions };
+            });
+
+            const errors = [];
+            let totalItems = 0;
+            const blueprintCounts = new Map(bank.metadata.blueprint.map(d => [d.id, d.count]));
+            const actualCounts = new Map();
+
+            for (const item of sanitizedItems) {
+                const domainId = item.domain_id;
+                actualCounts.set(domainId, (actualCounts.get(domainId) || 0) + 1);
+            }
+
+            for (const [domainId, expectedCount] of blueprintCounts.entries()) {
+                const actualCount = actualCounts.get(domainId) || 0;
+                if (actualCount !== expectedCount) {
+                    errors.push(`Domain ${domainId}: Expected ${expectedCount} questions, but found ${actualCount}.`);
+                }
+                totalItems += actualCount;
+            }
+
+            if (totalItems !== bank.metadata.items_total) {
+                errors.push(`Metadata expects ${bank.metadata.items_total} total questions, but ${totalItems} were found.`);
+            }
+
+            if (errors.length > 0) {
+                return { valid: false, errors, data: null };
+            }
+
+            const domains = new Map(bank.metadata.blueprint.map(d => [d.id, d.name]));
+            return { valid: true, errors: [], data: { ...bank, items: sanitizedItems, domains } };
+        }
+
+        // --- Utility Functions ---
+        const shuffleArray = (array) => {
+            return [...array].sort(() => Math.random() - 0.5);
+        };
+        
+        const formatTime = (seconds) => {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        };
+        
+        // --- React Components ---
+
+        // Main App Component
+        const App = () => {
+            const [gameState, setGameState] = useState('loading'); // 'loading', 'error', 'start', 'test', 'results', 'practice'
+            const [validationResult, setValidationResult] = useState(null);
+            const [testState, setTestState] = useState(null);
+
+            useEffect(() => {
+                const result = sanitizeAndValidateBank(BANK);
+                setValidationResult(result);
+                if (!result.valid) {
+                    setGameState('error');
+                    return;
+                }
+                
+                // Set CSS variables for colors from CONFIG
+                Object.entries(CONFIG.palette).forEach(([name, value]) => {
+                    document.documentElement.style.setProperty(`--color-${name}`, value);
+                });
+
+                const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (savedState) {
+                    try {
+                        const parsedState = JSON.parse(savedState);
+                        // If a test was completed, go to results. Otherwise, continue the test.
+                        if (parsedState.completed) {
+                            setTestState(parsedState);
+                            setGameState('results');
+                        } else {
+                            setTestState(parsedState);
+                            setGameState('test');
+                        }
+                    } catch {
+                        localStorage.removeItem(LOCAL_STORAGE_KEY);
+                        setGameState('start');
+                    }
+                } else {
+                    setGameState('start');
+                }
+            }, []);
+
+            const startTest = (userInfo) => {
+                const shuffledQuestionIds = shuffleArray(validationResult.data.items).map(q => q.id);
+                const initialTestState = {
+                    userInfo,
+                    shuffledQuestionIds,
+                    answers: {},
+                    currentQuestionIndex: 0,
+                    startTime: Date.now(),
+                    completed: false,
+                    timeRemaining: CONFIG.timeLimitMinutes * 60,
+                };
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialTestState));
+                setTestState(initialTestState);
+                setGameState('test');
+            };
+            
+            const startDomainPractice = (domainId) => {
+                const domainQuestions = validationResult.data.items.filter(q => q.domain_id === domainId);
+                // Sample with replacement to get 10 questions
+                const practiceQuestions = Array.from({ length: 10 }, () => domainQuestions[Math.floor(Math.random() * domainQuestions.length)]);
+                const shuffledQuestionIds = practiceQuestions.map((q, i) => `${q.id}-practice-${i}`); // ensure unique ids for practice
+                const practiceBank = practiceQuestions.map((q, i) => ({...q, id: shuffledQuestionIds[i]}));
+
+                const practiceState = {
+                    userInfo: { name: 'Practice Session' },
+                    shuffledQuestionIds,
+                    practiceBank, // Pass the small bank of questions
+                    answers: {},
+                    currentQuestionIndex: 0,
+                    startTime: Date.now(),
+                    completed: false,
+                    timeRemaining: null, // No timer for practice
+                    isPractice: true,
+                    domainId: domainId
+                };
+                setTestState(practiceState);
+                setGameState('practice');
+            };
+            
+            const finishTest = useCallback((finalState) => {
+                playSound('finish');
+                const completedState = { ...finalState, completed: true };
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(completedState));
+                setTestState(completedState);
+                setGameState('results');
+                
+                // Telemetry for console
+                 const results = calculateResults(completedState.answers, validationResult.data.items, validationResult.data.domains);
+                 console.log("--- TELEMETRY ---");
+                 console.log({
+                    timestamp: new Date().toISOString(),
+                    name: completedState.userInfo.name,
+                    email: completedState.userInfo.email,
+                    overallScore: results.overall.percent.toFixed(1),
+                    passed: results.passed,
+                    domains: Object.fromEntries(Object.entries(results.domains).map(([id, data]) => [id, data.percent.toFixed(1)]))
+                 });
+            }, [validationResult]);
+
+            const exitPractice = () => {
+                // Return to the main results screen
+                const mainTestState = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY));
+                setTestState(mainTestState);
+                setGameState('results');
+            }
+
+            const renderContent = () => {
+                switch (gameState) {
+                    case 'loading':
+                        return <div className="text-center p-8">LOADING ASSESSMENT...</div>;
+                    case 'error':
+                        return <ErrorScreen errors={validationResult.errors} />;
+                    case 'start':
+                        return <StartScreen onStart={startTest} />;
+                    case 'test':
+                    case 'practice':
+                        return (
+                            <QuestionScreen
+                                testState={testState}
+                                onFinish={finishTest}
+                                onExitPractice={exitPractice}
+                                bankData={gameState === 'practice' ? testState.practiceBank : validationResult.data.items}
+                                domains={validationResult.data.domains}
+                            />
+                        );
+
+                    case 'results':
+                        return (
+                            <ResultsScreen
+                                testState={testState}
+                                bankData={validationResult.data}
+                                onStartDomainPractice={startDomainPractice}
+                            />
+                        );
+                    default:
+                        return <div className="text-center p-8">INVALID STATE</div>;
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 bg-cover bg-center" style={{backgroundImage: `radial-gradient(circle, var(--color-navy) 0%, var(--color-midnight) 100%)`}}>
+                    <main className="w-full max-w-4xl mx-auto crt-screen">
+                        <div className="p-4 sm:p-6 md:p-8">
+                            {renderContent()}
+                        </div>
+                    </main>
+                    <footer className="text-center mt-4 text-sm text-[var(--color-muted)] opacity-60">
+                        <p>{CONFIG.brand.org} &copy; {new Date().getFullYear()}</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const ErrorScreen = ({ errors }) => (
+            <div className="text-center text-[var(--color-magenta)]">
+                <h1 className="font-pixel text-2xl mb-4 text-glow-magenta">SYSTEM ERROR</h1>
+                <p className="mb-6 text-[var(--color-text)]">The question bank has a configuration problem. Please notify the administrator.</p>
+                <div className="bg-[var(--color-midnight)] p-4 rounded text-left text-sm font-mono">
+                    {errors.map((error, i) => <p key={i} className="mb-2">{`> ${error}`}</p>)}
+                </div>
+            </div>
+        );
+
+        const StartScreen = ({ onStart }) => {
+            const [name, setName] = useState('');
+            const [email, setEmail] = useState('');
+            const [soundEnabled, setSoundEnabled] = useState(() => {
+                try { return JSON.parse(localStorage.getItem('caet_sound_enabled') || 'false'); } catch { return false; }
+            });
+
+            const handleSoundToggle = () => {
+                const newSetting = !soundEnabled;
+                setSoundEnabled(newSetting);
+                localStorage.setItem('caet_sound_enabled', JSON.stringify(newSetting));
+            };
+            
+            return (
+                <div className="flex flex-col items-center text-center">
+                    <h1 className="font-pixel text-3xl sm:text-4xl text-[var(--color-cyan)] text-glow-cyan mb-2">{CONFIG.brand.title}</h1>
+                    <p className="text-lg text-[var(--color-lime)] text-glow-lime mb-8">"{CONFIG.brand.tagline}"</p>
+
+                    <div className="max-w-xl text-left bg-[rgba(0,0,0,0.2)] p-6 rounded-lg border border-[var(--color-muted)]/20 mb-8">
+                        <h2 className="text-xl font-bold mb-4 text-[var(--color-amber)]">How It Works:</h2>
+                        <ul className="list-disc list-inside space-y-2 text-[var(--color-muted)]">
+                            <li>You'll have <strong>{CONFIG.timeLimitMinutes} minutes</strong> to answer {BANK.metadata.items_total} questions.</li>
+                            <li>Your progress is saved automatically if you refresh the page.</li>
+                            <li>Use your keyboard (<strong>1-4</strong> to select, <strong>N</strong> for Next, <strong>P</strong> for Prev) for speed.</li>
+                            <li>You'll get a detailed breakdown of your strengths and weaknesses at the end.</li>
+                        </ul>
+                    </div>
+                    
+                     <div className="w-full max-w-sm mb-6 space-y-4">
+                        <input
+                            type="text"
+                            placeholder="Name (Optional)"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-[var(--color-midnight)] border-2 border-[var(--color-navy)] rounded px-4 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] focus-ring-cyan"
+                        />
+                         <input
+                            type="email"
+                            placeholder="Email (Optional)"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-[var(--color-midnight)] border-2 border-[var(--color-navy)] rounded px-4 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] focus-ring-cyan"
+                        />
+                    </div>
+                    
+                    <div className="flex items-center space-x-4 mb-8">
+                      <label htmlFor="sound-toggle" className="text-[var(--color-muted)]">Sound Effects:</label>
+                      <button
+                        id="sound-toggle"
+                        onClick={handleSoundToggle}
+                        className={`w-14 h-8 rounded-full p-1 transition-colors duration-200 focus-ring-cyan ${soundEnabled ? 'bg-[var(--color-lime)]' : 'bg-[var(--color-midnight)]'}`}
+                      >
+                        <span className={`block w-6 h-6 rounded-full bg-white transition-transform duration-200 ${soundEnabled ? 'translate-x-6' : ''}`}></span>
+                      </button>
+                    </div>
+
+                    <button
+                        onClick={() => onStart({ name, email })}
+                        className="btn-retro font-pixel text-2xl bg-[var(--color-lime)] text-[var(--color-navy)] px-10 py-4 rounded-md hover:bg-[var(--color-amber)] focus-ring-cyan"
+                    >
+                        Start Test
+                    </button>
+                </div>
+            );
+        };
+
+        const QuestionScreen = ({ testState, onFinish, onExitPractice, bankData, domains }) => {
+            const [state, setState] = useState(testState);
+            const timerIntervalRef = useRef(null);
+
+            const allQuestions = React.useMemo(() => {
+                const questionMap = new Map();
+                bankData.forEach(q => questionMap.set(q.id, q));
+                return state.shuffledQuestionIds.map(id => questionMap.get(id)).filter(Boolean);
+            }, [state.shuffledQuestionIds, bankData]);
+            
+            const currentQuestion = allQuestions[state.currentQuestionIndex];
+            
+            // --- State Management & Persistence ---
+            useEffect(() => {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+            }, [state]);
+
+            // --- Timer Logic ---
+            useEffect(() => {
+                if(state.isPractice) return; // No timer in practice mode
+
+                timerIntervalRef.current = setInterval(() => {
+                    setState(prevState => {
+                        const newTime = prevState.timeRemaining - 1;
+                        if (newTime <= 0) {
+                            clearInterval(timerIntervalRef.current);
+                            onFinish({ ...prevState, timeRemaining: 0 });
+                            return { ...prevState, timeRemaining: 0 };
+                        }
+                        return { ...prevState, timeRemaining: newTime };
+                    });
+                }, 1000);
+
+                return () => clearInterval(timerIntervalRef.current);
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, [onFinish, state.isPractice]);
+
+            // --- Navigation & Answer Logic ---
+            const handleAnswerSelect = (questionId, optionId) => {
+                setState(prevState => {
+                    const newAnswers = { ...prevState.answers, [questionId]: optionId };
+                    const isCorrect = currentQuestion.options.find(o => o.id === optionId)?.correct;
+                    if (isCorrect) {
+                        playSound('correct');
+                    }
+                    return { ...prevState, answers: newAnswers };
+                });
+            };
+
+            const navigate = (direction) => {
+                setState(prevState => {
+                    const newIndex = prevState.currentQuestionIndex + direction;
+                    if (newIndex >= 0 && newIndex < allQuestions.length) {
+                        return { ...prevState, currentQuestionIndex: newIndex };
+                    }
+                    return prevState;
+                });
+            };
+
+            const handleFinish = () => {
+                if (window.confirm("Are you sure you want to finish and submit your answers?")) {
+                    onFinish(state);
+                }
+            };
+            
+            // --- Keyboard Shortcuts ---
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.key >= '1' && e.key <= '4') {
+                        const optionIndex = parseInt(e.key) - 1;
+                        if (currentQuestion && currentQuestion.options[optionIndex]) {
+                            handleAnswerSelect(currentQuestion.id, currentQuestion.options[optionIndex].id);
+                        }
+                    } else if (e.key.toLowerCase() === 'n') {
+                         navigate(1);
+                    } else if (e.key.toLowerCase() === 'p') {
+                        navigate(-1);
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [currentQuestion]);
+            
+            if (!currentQuestion) return <div>Loading question...</div>;
+            
+            const isLastQuestion = state.currentQuestionIndex === allQuestions.length - 1;
+            const domainName = domains.get(currentQuestion.domain_id);
+            const progressPercent = ((state.currentQuestionIndex + 1) / allQuestions.length) * 100;
+            
+            return (
+                <div className="flex flex-col h-[80vh] max-h-[800px]">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b-2 border-[var(--color-navy)]">
+                        <div className="bg-[var(--color-midnight)] px-3 py-1 rounded text-sm sm:text-base">
+                            <span className="font-bold text-[var(--color-cyan)]">
+                              {state.isPractice ? `PRACTICE: ${domains.get(state.domainId)}` : `Q ${state.currentQuestionIndex + 1}/${allQuestions.length}`}
+                            </span>
+                            {!state.isPractice && <span className="text-[var(--color-muted)] hidden sm:inline"> • Domain: {domainName}</span>}
+                        </div>
+                        {!state.isPractice && (
+                            <div className="font-pixel text-xl sm:text-2xl text-[var(--color-amber)]">
+                                {formatTime(state.timeRemaining)}
+                            </div>
+                        )}
+                         {state.isPractice && (
+                              <button onClick={onExitPractice} className="btn-retro bg-[var(--color-magenta)] text-sm text-[var(--color-navy)] px-3 py-1 rounded hover:bg-[var(--color-amber)] focus-ring-cyan">
+                                End Practice
+                            </button>
+                        )}
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="w-full bg-[var(--color-midnight)] rounded-full h-2 mb-6">
+                        <div className="bg-[var(--color-lime)] h-2 rounded-full" style={{ width: `${progressPercent}%` }}></div>
+                    </div>
+
+                    {/* Question Content */}
+                    <div className="flex-grow overflow-y-auto no-scrollbar">
+                        <fieldset>
+                            <legend className="text-xl md:text-2xl leading-relaxed mb-6 w-full">{currentQuestion.stem}</legend>
+                            <div className="space-y-4">
+                                {currentQuestion.options.map((option, index) => (
+                                    <label key={option.id} className="flex items-center p-4 rounded border-2 border-[var(--color-navy)] hover:border-[var(--color-cyan)] cursor-pointer transition-colors duration-150 has-[:checked]:bg-[var(--color-cyan)]/10 has-[:checked]:border-[var(--color-cyan)]">
+                                        <input
+                                            type="radio"
+                                            name={currentQuestion.id}
+                                            value={option.id}
+                                            checked={state.answers[currentQuestion.id] === option.id}
+                                            onChange={() => handleAnswerSelect(currentQuestion.id, option.id)}
+                                            className="mr-4 text-[var(--color-cyan)] focus:ring-[var(--color-cyan)] focus-ring-cyan"
+                                        />
+                                        <span className="text-lg">{`(${String.fromCharCode(65 + index)}) ${option.text}`}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between items-center pt-6 mt-auto border-t-2 border-[var(--color-navy)]">
+                        <button
+                            onClick={() => navigate(-1)}
+                            disabled={state.currentQuestionIndex === 0}
+                            className="btn-retro font-pixel text-lg bg-[var(--color-muted)] text-[var(--color-navy)] px-6 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-white focus-ring-cyan"
+                        >
+                            Prev (P)
+                        </button>
+
+                        {isLastQuestion ? (
+                             <button
+                                onClick={handleFinish}
+                                className="btn-retro font-pixel text-lg bg-[var(--color-lime)] text-[var(--color-navy)] px-6 py-2 rounded hover:bg-[var(--color-amber)] focus-ring-cyan animate-pulse"
+                            >
+                                Finish
+                            </button>
+                        ) : (
+                             <button
+                                onClick={() => navigate(1)}
+                                disabled={state.currentQuestionIndex === allQuestions.length - 1}
+                                className="btn-retro font-pixel text-lg bg-[var(--color-muted)] text-[var(--color-navy)] px-6 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-white focus-ring-cyan"
+                            >
+                                Next (N)
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+        
+        const calculateResults = (answers, allItems, domains) => {
+            let correctAnswers = 0;
+            const domainScores = {};
+
+            for (const domain of domains.keys()) {
+                domainScores[domain] = { correct: 0, total: 0 };
+            }
+
+            allItems.forEach(item => {
+                const domainId = item.domain_id;
+                domainScores[domainId].total += 1;
+                const correctOption = item.options.find(o => o.correct);
+                if (answers[item.id] === correctOption.id) {
+                    correctAnswers++;
+                    domainScores[domainId].correct += 1;
+                }
+            });
+
+            const overallPercent = (correctAnswers / allItems.length) * 100;
+            const passed = overallPercent >= CONFIG.cutScore;
+
+            const domainResults = {};
+            for (const [id, score] of Object.entries(domainScores)) {
+                 domainResults[id] = {
+                    ...score,
+                    percent: score.total > 0 ? (score.correct / score.total) * 100 : 0,
+                    name: domains.get(id),
+                 };
+            }
+            
+            return {
+                overall: { correct: correctAnswers, total: allItems.length, percent: overallPercent },
+                domains: domainResults,
+                passed,
+            };
+        };
+
+        const ResultsScreen = ({ testState, bankData, onStartDomainPractice }) => {
+            const results = useMemo(() => calculateResults(testState.answers, bankData.items, bankData.domains), [testState, bankData]);
+            const [studyPlanVisible, setStudyPlanVisible] = useState(false);
+            const [chartJsLoaded, setChartJsLoaded] = useState(false);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (typeof Chart !== 'undefined') {
+                    setChartJsLoaded(true);
+                    Chart.defaults.color = CONFIG.palette.muted;
+                    Chart.defaults.borderColor = 'rgba(159, 177, 214, 0.2)';
+                    Chart.defaults.font.family = "'Inter', sans-serif";
+                }
+            }, []);
+
+            const { strengths, gaps } = useMemo(() => {
+                const sortedDomains = Object.values(results.domains)
+                    .filter(d => d.total >= 3) // Only consider domains with at least 3 items
+                    .sort((a, b) => {
+                        if (a.percent !== b.percent) return b.percent - a.percent;
+                        return a.name.localeCompare(b.name); // Alphabetical tie-breaker
+                    });
+
+                return {
+                    strengths: sortedDomains.slice(0, 3),
+                    gaps: sortedDomains.slice(-3).reverse()
+                };
+            }, [results.domains]);
+
+            const exportResults = () => {
+                const exportData = {
+                    timestamp: new Date().toISOString(),
+                    userInfo: testState.userInfo,
+                    overallScorePercent: results.overall.percent,
+                    passed: results.passed,
+                    domainScores: Object.fromEntries(
+                        Object.entries(results.domains).map(([id, data]) => [id, { name: data.name, percent: data.percent, correct: data.correct, total: data.total }])
+                    ),
+                    answers: testState.answers
+                };
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'caet_pre_results.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const missedQuestions = bankData.items.filter(item => {
+                const correctOption = item.options.find(o => o.correct);
+                return testState.answers[item.id] !== correctOption.id;
+            });
+            
+            return (
+                <div className="space-y-8">
+                    {/* Header: Badge and Overall Score */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between p-6 bg-[var(--color-midnight)] rounded-lg border-2 border-[var(--color-navy)]">
+                        <div className="text-center sm:text-left mb-4 sm:mb-0">
+                            {results.passed ? (
+                                <span className="font-pixel text-4xl text-[var(--color-lime)] text-glow-lime">PASS</span>
+                            ) : (
+                                <span className="font-pixel text-4xl text-[var(--color-magenta)] text-glow-magenta">NOT YET</span>
+                            )}
+                            <p className="text-[var(--color-muted)] mt-1">Passing score: {CONFIG.cutScore}%</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-6xl font-bold text-[var(--color-cyan)]">{results.overall.percent.toFixed(1)}<span className="text-3xl text-[var(--color-muted)]">%</span></p>
+                            <p className="text-[var(--color-muted)]">{results.overall.correct} / {results.overall.total} correct</p>
+                        </div>
+                    </div>
+
+                    {/* Mastery Chart & Strengths/Gaps */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                         <div className="p-6 bg-[var(--color-midnight)] rounded-lg border-2 border-[var(--color-navy)]">
+                            <h2 className="text-xl font-bold mb-4 text-[var(--color-amber)]">Domain Mastery</h2>
+                            {chartJsLoaded ? (
+                                <RadarChart chartData={results.domains} />
+                            ) : (
+                                <div className="text-center p-4 bg-[var(--color-navy)] rounded">
+                                  <p className="font-bold text-[var(--color-amber)]">Chart offline; showing bars instead.</p>
+                                  <div className="mt-4 space-y-2 text-left">
+                                      {Object.values(results.domains).map(domain => (
+                                          <div key={domain.name}>
+                                              <p className="text-sm text-[var(--color-muted)]">{domain.name}</p>
+                                              <div className="w-full bg-[var(--color-navy)] rounded-full h-4">
+                                                  <div className="bg-[var(--color-cyan)] h-4 rounded-full" style={{width: `${domain.percent}%`}}></div>
+                                              </div>
+                                          </div>
+                                      ))}
+                                  </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-6 bg-[var(--color-midnight)] rounded-lg border-2 border-[var(--color-navy)] space-y-6">
+                           <div>
+                                <h3 className="text-lg font-bold text-[var(--color-lime)] mb-2">Top 3 Strengths</h3>
+                                <ul className="space-y-1">
+                                    {strengths.map(d => <li key={d.name} className="flex justify-between"><span>{d.name}</span> <span className="font-mono text-[var(--color-muted)]">{d.percent.toFixed(1)}%</span></li>)}
+                               </ul>
+                           </div>
+                           <div>
+                                <h3 className="text-lg font-bold text-[var(--color-magenta)] mb-2">Top 3 Gaps</h3>
+                                 <ul className="space-y-1">
+                                    {gaps.map(d => <li key={d.name} className="flex justify-between"><span>{d.name}</span> <span className="font-mono text-[var(--color-muted)]">{d.percent.toFixed(1)}%</span></li>)}
+                               </ul>
+                           </div>
+                        </div>
+                    </div>
+                    
+                    {/* Per-Domain Cards */}
+                    <div>
+                        <h2 className="text-2xl font-bold mb-4 font-pixel text-[var(--color-cyan)]">Domain Scores</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           {Object.entries(results.domains).map(([id, data]) => (
+                             <DomainCard key={id} domainId={id} data={data} onRetake={onStartDomainPractice}/>
+                           ))}
+                        </div>
+                    </div>
+                    
+                    {/* Study Plan */}
+                    <div>
+                        <button onClick={() => setStudyPlanVisible(!studyPlanVisible)} className="w-full text-left text-2xl font-bold mb-4 font-pixel text-[var(--color-cyan)] flex justify-between items-center">
+                            <span>Study Plan ({missedQuestions.length} items)</span>
+                            <span className={`transform transition-transform ${studyPlanVisible ? 'rotate-90' : ''}`}>▶</span>
+                        </button>
+                        {studyPlanVisible && (
+                          <div className="space-y-6 p-6 bg-[var(--color-midnight)] rounded-lg border-2 border-[var(--color-navy)]">
+                            {missedQuestions.map(q => {
+                                const correctOpt = q.options.find(o => o.correct);
+                                return (
+                                    <div key={q.id} className="pb-4 border-b border-[var(--color-navy)] last:border-b-0">
+                                        <p className="font-bold mb-2">{q.stem}</p>
+                                        <p className="text-[var(--color-lime)]"><span className="font-bold">Correct Answer:</span> {correctOpt.text}</p>
+                                        <p className="text-[var(--color-muted)] text-sm mt-1"><span className="font-bold">Rationale:</span> {correctOpt.rationale}</p>
+                                    </div>
+                                );
+                            })}
+                          </div>
+                        )}
+                    </div>
+
+                    <div className="text-center pt-6">
+                        <button onClick={exportResults} className="btn-retro font-pixel text-lg bg-[var(--color-cyan)] text-[var(--color-navy)] px-8 py-3 rounded hover:bg-[var(--color-amber)] focus-ring-cyan">
+                            Export Results (JSON)
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const RadarChart = ({ chartData }) => {
+            const chartCanvasRef = useRef(null);
+
+            useEffect(() => {
+                if (chartCanvasRef.current) {
+                    const ctx = chartCanvasRef.current.getContext('2d');
+                    const chart = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: Object.values(chartData).map(d => d.name),
+                            datasets: [{
+                                label: 'Mastery %',
+                                data: Object.values(chartData).map(d => d.percent),
+                                fill: true,
+                                backgroundColor: 'rgba(51, 246, 255, 0.2)',
+                                borderColor: 'rgb(51, 246, 255)',
+                                pointBackgroundColor: 'rgb(51, 246, 255)',
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: 'rgb(51, 246, 255)'
+                            }]
+                        },
+                        options: {
+                            elements: { line: { tension: 0.1 } },
+                            scales: {
+                                r: {
+                                    angleLines: { color: 'rgba(159, 177, 214, 0.2)' },
+                                    grid: { color: 'rgba(159, 177, 214, 0.2)' },
+                                    pointLabels: { font: { size: 10 } },
+                                    ticks: {
+                                        backdropColor: 'rgba(11, 15, 43, 0.8)',
+                                        stepSize: 25
+                                    },
+                                    suggestedMin: 0,
+                                    suggestedMax: 100
+                                }
+                            },
+                             plugins: { legend: { display: false } }
+                        }
+                    });
+
+                    return () => chart.destroy();
+                }
+            }, [chartData]);
+            
+            return <canvas ref={chartCanvasRef}></canvas>;
+        };
+        
+        const DomainCard = ({ domainId, data, onRetake }) => {
+            return (
+                <div className="bg-[var(--color-midnight)] p-4 rounded-lg border border-[var(--color-navy)]">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h4 className="font-bold text-lg">{data.name}</h4>
+                            <p className="text-[var(--color-muted)] text-sm">{data.correct} / {data.total} Correct</p>
+                        </div>
+                        <p className={`font-bold text-xl ${data.percent >= CONFIG.cutScore ? 'text-[var(--color-lime)]' : 'text-[var(--color-magenta)]'}`}>
+                            {data.percent.toFixed(1)}%
+                        </p>
+                    </div>
+                    <div className="w-full bg-[var(--color-navy)] rounded-full h-2.5 my-3">
+                      <div className="h-2.5 rounded-full" style={{ width: `${data.percent}%`, backgroundColor: data.percent >= CONFIG.cutScore ? 'var(--color-lime)' : 'var(--color-magenta)'}}></div>
+                    </div>
+                    <div className="text-right">
+                       <button onClick={() => onRetake(domainId)} className="btn-retro bg-[var(--color-muted)] text-sm text-[var(--color-navy)] px-3 py-1 rounded hover:bg-[var(--color-amber)] focus-ring-cyan">
+                            Retake this domain
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+
+        // --- Render the App ---
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
