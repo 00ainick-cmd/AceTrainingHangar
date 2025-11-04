@@ -953,6 +953,7 @@ function q(prompt, answer, tags) {
 
 // Your test questions
 // Your test questions
+// Your test questions
 const CATEGORIES = [
   { id:'ohms_law', name:'Ohm\'s Law (V=IR)', icon:'⚡', iconColor:'#ffff00',
     items:[
@@ -1033,7 +1034,6 @@ const CATEGORIES = [
       q('A junction has 5A coming in, 2A going to one light, and 3A going to another. This demonstrates what law?', 'Kirchhoff\'s Current Law (KCL), where 5A_in = 2A_out + 3A_out.', ['Kirchhoff\'s Laws', 'KCL', 'Calculation'])
     ]}
 ];
-
 // Motivational messages array
 const MOTIVATIONAL_MESSAGES = [
   "You Can Do It!!! 😊",
