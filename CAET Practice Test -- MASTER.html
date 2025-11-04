@@ -1476,5 +1476,55 @@ function reportTestScore(userScore, totalPossible) {
 // EXAMPLE: When your test ends, call this:
 // reportTestScore(85, 100);  // User got 85 out of 100 points
 </script>
+<script>
+// Detect if we're in flashcards or practice mode
+function detectMode() {
+  try {
+    if (window.parent && window.parent.document) {
+      const url = window.location.href;
+      if (url.includes('flashcards') || window.frameElement && window.frameElement.id === 'flashcards-iframe') {
+        return 'flashcards';
+      }
+    }
+  } catch(e) {}
+  return 'practice';
+}
+
+// Report test score to main page
+function reportTestScore(userScore, totalPossible) {
+  const percentage = Math.round((userScore / totalPossible) * 100);
+  const mode = detectMode();
+  
+  console.log('📊 Test completed:', mode, percentage + '%');
+  
+  try {
+    if (window.parent && window.parent.completeModule) {
+      window.parent.completeModule(mode, percentage);
+      return;
+    }
+  } catch(e) {
+    console.log('Cannot access parent page');
+  }
+  
+  try {
+    window.parent.postMessage({
+      type: 'moduleComplete',
+      module: mode,
+      score: percentage
+    }, '*');
+  } catch(e) {}
+}
+
+// TEST BUTTON for debugging
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.createElement('button');
+  btn.innerHTML = '🧪 TEST SCORE';
+  btn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:99999;padding:12px 24px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
+  btn.onclick = () => reportTestScore(85, 100);
+  document.body.appendChild(btn);
+});
+
+window.reportTestScore = reportTestScore;
+</script>  
 </body>
 </html>
