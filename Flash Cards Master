@@ -149,161 +149,217 @@
   
 
   
+[
   {
-    "term": "Alternating Current (AC)",
-    "definition": "Electric current that reverses direction periodically, typically a sine wave. Common in aircraft power and instruments.",
-    "analogy": "Water sloshing back and forth at a steady rhythm.",
-    "unit": "AC Fundamentals",
-    "tags": ""
+    "term": "Voltage (V)",
+    "definition": "The electrical pressure or potential difference that causes electrons to flow, often symbolized as E (electromotive force) or V, and is measured in Volts (V) [4-6]. In aircraft, standard DC voltages are typically 14V or 28V [3, 4, 7, 8].",
+    "analogy": "The height of a waterfall or the water pressure in a hose [4-6, 9].",
+    "unit": "Volt (V)",
+    "tags": "DC 101|fundamentals|measurement"
   },
   {
-    "term": "Hertz (Hz)",
-    "definition": "Unit of frequency: how many complete AC cycles occur each second.",
-    "analogy": "Beats per second on a metronome.",
-    "unit": "AC Fundamentals",
-    "tags": "frequency"
+    "term": "Current (I)",
+    "definition": "The flow rate of electrons (electrical charge) through a conductor, measured in Amperes (A) [7, 9-11]. Controlling current is essential for safe avionics operation [12].",
+    "analogy": "The flow rate or amount of water moving through a pipe or hose [9, 10, 13].",
+    "unit": "Ampere (A)",
+    "tags": "DC 101|fundamentals|measurement"
   },
   {
-    "term": "Frequency",
-    "definition": "Rate of repetition of an AC waveform. Many aircraft use 400 Hz for lighter components and smoother power.",
-    "analogy": "How fast the rhythm is set for the system.",
-    "unit": "AC Fundamentals",
-    "tags": "frequency|aircraft"
+    "term": "Resistance (R)",
+    "definition": "The opposition or 'friction' to electron flow through a material, measured in Ohms ($\\Omega$) [9, 13-15]. Resistance is used to control current and protect sensitive avionics components [12, 16].",
+    "analogy": "Rocks in a riverbed that impede water flow, or the diameter of a hose (smaller hose = higher resistance) [9, 13, 14].",
+    "unit": "Ohm ($\\Omega$)",
+    "tags": "DC 101|fundamentals|measurement"
   },
   {
-    "term": "Sine Wave",
-    "definition": "Smooth, repeating AC waveform used as the standard reference for measurements.",
-    "analogy": "A regular ocean swell instead of choppy waves.",
-    "unit": "AC Fundamentals",
-    "tags": "waveform"
+    "term": "Ohm’s Law (V=I×R)",
+    "definition": "The fundamental mathematical relationship describing voltage, current, and resistance: Voltage equals Current multiplied by Resistance (V = I × R) [2, 10, 12, 17, 18]. This is the most important tool for troubleshooting electrical issues [12, 19].",
+    "analogy": "The backbone of every electrical problem solved in a small aircraft [19].",
+    "unit": "DC 102 (Formula)",
+    "tags": "formula|troubleshooting"
   },
   {
-    "term": "Peak Voltage (Vp)",
-    "definition": "Highest instantaneous value of the AC wave (positive or negative).",
-    "analogy": "The top of the tallest wave crest.",
-    "unit": "AC Fundamentals",
-    "tags": "waveform"
+    "term": "Ohm’s Law Triangle",
+    "definition": "A visual memory aid used by technicians where V is placed at the top, and I and R are at the base; covering the desired variable reveals the correct formula [20, 21].",
+    "analogy": "A fast, foolproof method to recall the three core electrical relationships [20].",
+    "unit": "DC 102 (Tool)",
+    "tags": "formula|tool"
   },
   {
-    "term": "Peak-to-Peak Voltage (Vpp)",
-    "definition": "Total swing from lowest trough to highest crest. For a sine wave, Vpp = 2 × Vp.",
-    "analogy": "From the bottom of the valley to the top of the hill.",
-    "unit": "AC Fundamentals",
-    "tags": "waveform"
+    "term": "Ohm's Law (Current Formula)",
+    "definition": "A derived formula stating that Current equals Voltage divided by Resistance (I = V $\\div$ R) [10, 17, 22]. This is used to calculate the electrical load to select proper circuit protection [23].",
+    "analogy": "Finding the flow rate when you know the pressure and the size of the restriction [17].",
+    "unit": "DC 102 (Formula)",
+    "tags": "formula|troubleshooting"
   },
   {
-    "term": "RMS Voltage (Vrms)",
-    "definition": "DC-equivalent voltage that delivers the same heating as AC. For sine waves, Vrms ≈ 0.707 × Vp.",
-    "analogy": "The steady push that matches the average work of the sloshing flow.",
-    "unit": "AC Fundamentals",
-    "tags": "calculation"
+    "term": "Ohm's Law (Resistance Formula)",
+    "definition": "A derived formula stating that Resistance equals Voltage divided by Current (R = V $\\div$ I) [14, 17, 22]. This is used to determine the resistance of components like light bulbs or heating elements [14, 20].",
+    "analogy": "Finding the size of the obstruction when you know the pressure and the flow rate [17].",
+    "unit": "DC 102 (Formula)",
+    "tags": "formula|troubleshooting"
   },
   {
-    "term": "Inductor",
-    "definition": "Coil that stores energy in a magnetic field and resists sudden changes in current.",
-    "analogy": "A flywheel that smooths jerky motion.",
-    "unit": "AC Fundamentals",
-    "tags": "component"
+    "term": "Electrical Power (P)",
+    "definition": "The rate of doing work or consuming energy in a circuit, calculated primarily using P = V $\\times$ I [24-27]. Power calculations are critical for proper wire sizing and circuit breaker selection [2, 25, 28, 29].",
+    "analogy": "The volume or amount of work being produced, or the energy consumed by a device [24, 30, 31].",
+    "unit": "Watt (W)",
+    "tags": "DC 102|calculations|safety"
   },
   {
-    "term": "Capacitor",
-    "definition": "Two plates with a dielectric that store energy in an electric field and resist sudden voltage changes.",
-    "analogy": "A diaphragm tank that absorbs pressure pulses.",
-    "unit": "AC Fundamentals",
-    "tags": "component"
+    "term": "Watt's Law (Derived)",
+    "definition": "Alternative formulas derived from Ohm's Law and Power, such as P = I² $\\times$ R and P = V² $\\div$ R, useful when current or voltage measurements are difficult to obtain [25, 26, 32, 33].",
+    "analogy": "Alternative routes to calculate the work being done if you can't measure all the basic variables [32].",
+    "unit": "DC 102 (Formula)",
+    "tags": "formula|calculations"
   },
   {
-    "term": "Inductive Reactance (Xl)",
-    "definition": "How an inductor resists AC: Xl = 2πfL. Higher frequency or more inductance means more opposition.",
-    "analogy": "A heavier flywheel that’s harder to speed up quickly.",
-    "unit": "AC Fundamentals",
-    "tags": "formula|inductor"
+    "term": "Conductor",
+    "definition": "Materials, typically metals like copper or aluminum, that allow electricity to flow easily because they have many free valence electrons and low resistance [14, 15, 34, 35].",
+    "analogy": "A clear, wide highway for the smooth flow of electrical current [34].",
+    "unit": "DC 101 (Material)",
+    "tags": "fundamentals|materials"
   },
   {
-    "term": "Capacitive Reactance (Xc)",
-    "definition": "How a capacitor resists AC: Xc = 1/(2πfC). Higher frequency or more capacitance means less opposition.",
-    "analogy": "A flexible diaphragm that yields more easily when you pump faster.",
-    "unit": "AC Fundamentals",
-    "tags": "formula|capacitor"
+    "term": "Insulator",
+    "definition": "Materials, such as rubber or plastic, that block or highly resist the flow of electricity, used in avionics for wire jackets and safety barriers [14, 34, 36].",
+    "analogy": "A physical barrier or safety fence confining the electrical current to its intended path [34, 37].",
+    "unit": "DC 101 (Material)",
+    "tags": "fundamentals|materials"
   },
   {
-    "term": "Transformer",
-    "definition": "AC device with primary/secondary windings that steps voltage up or down and provides isolation.",
-    "analogy": "Two gears on the same shaft trading speed for torque.",
-    "unit": "AC Fundamentals",
-    "tags": "power|isolation"
+    "term": "Semiconductor",
+    "definition": "Materials, like silicon, with electrical properties between conductors and insulators, used in modern solid-state electronics like transistors and diodes where conductivity can be controlled [14, 34, 37, 38].",
+    "analogy": "The basis of all modern electronic components that can act as a controlled switch [34].",
+    "unit": "DC 101 (Material)",
+    "tags": "fundamentals|materials|devices"
   },
   {
-    "term": "Turns Ratio",
-    "definition": "Winding ratio that sets voltage change: more secondary turns raise voltage, fewer lower it.",
-    "analogy": "Gear ratio that decides output speed.",
-    "unit": "AC Fundamentals",
-    "tags": "transformer|formula"
+    "term": "Electron",
+    "definition": "Tiny negatively charged particles orbiting the atom's nucleus [39, 40]. The directed movement of valence electrons from atom to atom creates electrical current [41, 42].",
+    "analogy": "The moving charge carriers that make up electricity [41].",
+    "unit": "DC 101 (Physics)",
+    "tags": "atomic_theory"
   },
   {
-    "term": "Rectifier",
-    "definition": "Diode circuit that converts AC to DC. Half-wave uses one diode; full-wave bridge uses four for smoother output.",
-    "analogy": "Check valves that allow one-way flow.",
-    "unit": "AC Fundamentals",
-    "tags": "conversion"
+    "term": "Proton",
+    "definition": "Positively charged particle located within the nucleus of an atom [39, 40]. Protons contribute to the mass and stability of the atom [42].",
+    "analogy": "A fundamental positive charge at the core of matter [39].",
+    "unit": "DC 101 (Physics)",
+    "tags": "atomic_theory"
   },
   {
-    "term": "Ripple",
-    "definition": "Leftover AC variation on a DC line after rectification and filtering. Too much ripple causes noise and glitches.",
-    "analogy": "Small waves left in the tank after the slosh settles.",
-    "unit": "AC Fundamentals",
-    "tags": "power quality"
+    "term": "Series Circuit",
+    "definition": "A configuration where components are connected end-to-end in a single, unbroken path [2, 43-46]. The same current flows through all components [43, 44, 46-48].",
+    "analogy": "A single chain of components; one failure stops the entire circuit [43, 46, 49].",
+    "unit": "DC 103 (Circuit Type)",
+    "tags": "circuit_type"
   },
   {
-    "term": "Oscilloscope",
-    "definition": "Instrument that plots voltage versus time so you can see amplitude, shape, and frequency.",
-    "analogy": "A high-speed camera for electrical signals.",
-    "unit": "AC Fundamentals",
-    "tags": "measurement|test"
+    "term": "Parallel Circuit",
+    "definition": "A configuration where components are connected across common voltage points, offering multiple independent current paths [2, 50-53]. The voltage is the same across all branches [53-56].",
+    "analogy": "Modern household wiring or aircraft distribution where turning off one device doesn't affect others [54, 57, 58].",
+    "unit": "DC 103 (Circuit Type)",
+    "tags": "circuit_type"
   },
   {
-    "term": "Time/Div",
-    "definition": "Scope’s horizontal scale that sets how much time each screen division represents.",
-    "analogy": "Shutter timing that decides how much motion you see.",
-    "unit": "AC Fundamentals",
-    "tags": "measurement|scope"
+    "term": "Complex Circuit",
+    "definition": "A combination of both series and parallel elements, common in avionics installations where safety and independent operation are required [2, 53-55].",
+    "analogy": "Wiring the power wire on multiple components in parallel, which then runs in series to a circuit breaker [54].",
+    "unit": "DC 103 (Circuit Type)",
+    "tags": "circuit_type"
   },
   {
-    "term": "Volts/Div",
-    "definition": "Scope’s vertical scale that sets how much voltage each division represents.",
-    "analogy": "Zoom that makes small or big waves visible.",
-    "unit": "AC Fundamentals",
-    "tags": "measurement|scope"
+    "term": "Kirchhoff's Voltage Law (KVL)",
+    "definition": "States that the sum of all voltage drops around any closed loop in a circuit must equal the total supply voltage (or sum to zero) [2, 43, 59-61]. Essential for ensuring components receive correct voltage [62].",
+    "analogy": "The source voltage must be entirely consumed by the components in the loop [63].",
+    "unit": "DC 103 (Law)",
+    "tags": "law|series|troubleshooting"
   },
   {
-    "term": "Probe Attenuation (×1/×10)",
-    "definition": "Scope probes often reduce the signal (×10) to extend range and reduce loading; match the probe and scope settings.",
-    "analogy": "Reading pressure through a reducer so the gauge isn’t overwhelmed.",
-    "unit": "AC Fundamentals",
-    "tags": "measurement|procedure"
+    "term": "Kirchhoff's Current Law (KCL)",
+    "definition": "States that the total current entering a junction must equal the total current leaving the junction [2, 54, 64-66]. This ensures current is properly distributed across all parallel branches [67].",
+    "analogy": "A rule ensuring no current is lost or created at a junction point where wires meet [67].",
+    "unit": "DC 103 (Law)",
+    "tags": "law|parallel|troubleshooting"
   },
   {
-    "term": "AC vs DC Coupling (Scope)",
-    "definition": "AC coupling blocks DC and shows only variations; DC coupling shows the full signal including the DC level.",
-    "analogy": "A filter that hides the steady water level and shows only the ripples.",
-    "unit": "AC Fundamentals",
-    "tags": "measurement|scope"
+    "term": "Series Resistance Formula",
+    "definition": "Total resistance in a series circuit is the sum of all individual resistances: R_total = R₁ + R₂ + R₃ + ... [43, 49, 51, 68]. Adding components increases the total resistance [49, 68].",
+    "analogy": "Total friction is the sum of every rough spot the current encounters in its single path [68].",
+    "unit": "DC 103 (Formula)",
+    "tags": "formula|series"
   },
   {
-    "term": "Measure AC Voltage (DMM)",
-    "definition": "Set meter to VAC and probe in parallel across the points of interest. For non-sine or higher-frequency signals, use a true-RMS meter.",
-    "analogy": "Sampling two points on a tank to read wave height.",
-    "unit": "AC Fundamentals",
-    "tags": "measurement|procedure"
+    "term": "Parallel Resistance Formula",
+    "definition": "Total resistance is the reciprocal of the sum of the individual reciprocals: 1/R_total = 1/R₁ + 1/R₂ + ... [54, 55, 69, 70]. The total resistance is always less than the smallest individual resistor [54, 69, 71].",
+    "analogy": "Adding multiple paths makes it easier for the current to flow, reducing the overall resistance [69].",
+    "unit": "DC 103 (Formula)",
+    "tags": "formula|parallel"
   },
   {
-    "term": "400 Hz Aircraft AC",
-    "definition": "Common aircraft standard (115/200 VAC at 400 Hz) enabling lighter transformers and stable instrument power.",
-    "analogy": "A faster rhythm that keeps components compact and responsive.",
-    "unit": "AC Fundamentals",
-    "tags": "aircraft|spec"
-  }
-
+    "term": "Open Circuit",
+    "definition": "A fault caused by a break or disconnection in the current path, resulting in infinite resistance (O.L.) and zero current flow (0 Amps) [2, 72-74].",
+    "analogy": "A dammed river or a broken wire; the current stops completely [72, 75].",
+    "unit": "DC 103 (Fault)",
+    "tags": "fault|troubleshooting"
+  },
+  {
+    "term": "Short Circuit",
+    "definition": "A dangerous fault where current takes an unintended low-resistance path, causing excessive current flow that can trip circuit protection or cause fires [2, 73, 76, 77].",
+    "analogy": "Electrons taking the least resistive path, such as through a carelessly dropped metal wrench across battery terminals [76].",
+    "unit": "DC 103 (Fault)",
+    "tags": "fault|safety"
+  },
+  {
+    "term": "Voltage Drop",
+    "definition": "The reduction in voltage across a component in a circuit as energy is consumed, calculated using Ohm's Law (V = I $\\times$ R) [2, 47, 63]. High-resistance connections (corrosion) cause unwanted voltage drops [28, 78].",
+    "analogy": "The amount of pressure lost as water passes through a small pipe or filter [6, 62].",
+    "unit": "DC 103 (Concept)",
+    "tags": "troubleshooting"
+  },
+  {
+    "term": "Multimeter",
+    "definition": "A handheld test instrument essential for avionics technicians used to measure fundamental electrical quantities: voltage, current, and resistance [2, 59, 79].",
+    "analogy": "The primary diagnostic tool, allowing technicians to interpret electrical system health [59, 80].",
+    "unit": "DC 103 (Tool)",
+    "tags": "tool|measurement"
+  },
+  {
+    "term": "Measuring Voltage (Procedure)",
+    "definition": "Voltage is measured by connecting the multimeter probes *across* (in parallel with) the component or circuit being tested [2, 6, 7, 51]. This must be done while the circuit is powered ON [81].",
+    "analogy": "Measuring the pressure difference between the inlet and outlet of a device [7].",
+    "unit": "DC 103 (Procedure)",
+    "tags": "multimeter|procedure"
+  },
+  {
+    "term": "Measuring Current (Procedure)",
+    "definition": "Current is measured by inserting the multimeter *into* (in series with) the circuit, physically breaking the current path so the flow runs through the meter [2, 13, 51, 82, 83]. This must be done carefully to avoid blowing fuses [2, 84].",
+    "analogy": "Cutting a pipe and routing the entire water flow through a flow meter [83, 84].",
+    "unit": "DC 103 (Procedure)",
+    "tags": "multimeter|procedure"
+  },
+  {
+    "term": "Measuring Resistance (Procedure)",
+    "definition": "Resistance is measured by connecting the multimeter probes across the component, but the circuit power must be completely OFF to prevent damage to the meter and ensure accurate results [17, 51, 85].",
+    "analogy": "Checking the impedance of a wire or component when it is completely isolated [85].",
+    "unit": "DC 103 (Procedure)",
+    "tags": "multimeter|procedure"
+  },
+  {
+    "term": "Electrostatic Discharge (ESD)",
+    "definition": "The rapid transfer of static electrical charge built up on an object [2, 86]. This poses a serious hazard as it can damage sensitive avionics components like microprocessors [2, 76, 87].",
+    "analogy": "The invisible static shock that can 'fry' delicate circuits [88].",
+    "unit": "DC 101 (Safety)",
+    "tags": "safety|maintenance"
+  },
+  {
+    "term": "ESD Precautions",
+    "definition": "Safety procedures, such as using grounding straps and anti-static mats, designed to safely discharge built-up static electricity before handling sensitive electronics [2, 89].",
+    "analogy": "Grounding oneself to prevent static discharge from destroying microprocessors [89, 90].",
+    "unit": "DC 101 (Safety)",
+    "tags": "safety|maintenance"
+  },
 
 
 
