@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>✈️ AVIONICS MASTER TRAINER ✈️ [SEGA-1994]</title>
+  
+  <!-- Retro Gaming Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+    }
+
+    :root {
+      /* Sega Genesis Palette */
+      --genesis-black: #000000;
+      --genesis-blue: #0000ff;
+      --genesis-dark-blue: #000088;
+      --genesis-sky: #5588ff;
+      --genesis-cyan: #00ffff;
+      --genesis-green: #00ff00;
+      --genesis-yellow: #ffff00;
+      --genesis-orange: #ff8800;
+      --genesis-red: #ff0000;
+      --genesis-pink: #ff00ff;
+      --genesis-purple: #8800ff;
+      --genesis-white: #ffffff;
+      --genesis-gray: #888888;
+      --genesis-metal: #4444aa;
+      
+      /* UI Colors */
+      --ui-bg: #000033;
+      --ui-panel: #000066;
+      --ui-highlight: #00ffff;
+      --ui-text: #ffffff;
+      --ui-shadow: #000000;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-2px); }
+      75% { transform: translateX(2px); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes sparkle {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--genesis-black);
+      color: var(--ui-text);
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    /* Scanlines Effect */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.3) 2px,
+        rgba(0, 0, 0, 0.3) 4px
+      );
+      pointer-events: none;
+      z-index: 10000;
+    }
+
+    /* Main Game Container */
+    .game-container {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, #000033 0%, #000066 50%, #000033 100%);
+    }
+
+    /* Animated Background Layers */
+    .bg-layer {
+      position: absolute;
+      width: 200%;
+      height: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    /* Sky with moving clouds */
+    .bg-sky {
+      background: linear-gradient(180deg, #000033 0%, #003366 30%, #0066aa 60%, #3399ff 100%);
+      z-index: 1;
+    }
+
+    /* Parallax Clouds */
+    .bg-clouds-far {
+      z-index: 2;
+      opacity: 0.3;
+      animation: scroll-slow 80s linear infinite;
+      background-image: 
+        radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 40%),
+        radial-gradient(ellipse at 60% 40%, rgba(255,255,255,0.3) 0%, transparent 35%),
+        radial-gradient(ellipse at 85% 20%, rgba(255,255,255,0.4) 0%, transparent 45%);
+      background-size: 600px 200px;
+      background-repeat: repeat-x;
+      background-position: 0 20%;
+    }
+
+    .bg-clouds-near {
+      z-index: 3;
+      opacity: 0.5;
+      animation: scroll-medium 40s linear infinite;
+      background-image: 
+        radial-gradient(ellipse at 30% 60%, rgba(255,255,255,0.6) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 50%, rgba(255,255,255,0.5) 0%, transparent 45%);
+      background-size: 800px 300px;
+      background-repeat: repeat-x;
+      background-position: 0 40%;
+    }
+
+    /* Animated Runway */
+    .bg-runway {
+      position: absolute;
+      bottom: 0;
+      width: 200%;
+      height: 150px;
+      z-index: 4;
+      background: 
+        repeating-linear-gradient(90deg, 
+          #444444 0px, #444444 40px, 
+          #ffff00 40px, #ffff00 45px,
+          #444444 45px, #444444 85px,
+          #ffffff 85px, #ffffff 90px
+        );
+      transform: perspective(200px) rotateX(40deg);
+      animation: scroll-fast 3s linear infinite;
+    }
+
+    @keyframes scroll-slow {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    @keyframes scroll-medium {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    @keyframes scroll-fast {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* HUD Overlay */
+    .hud-top {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      z-index: 100;
+      padding: 15px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .score-panel {
+      background: var(--ui-panel);
+      border: 3px solid var(--genesis-cyan);
+      padding: 8px 12px;
+      box-shadow: 
+        4px 4px 0 var(--ui-shadow),
+        inset 0 0 20px rgba(0,255,255,0.2);
+    }
+
+    .score-label {
+      color: var(--genesis-yellow);
+      font-size: 10px;
+      display: block;
+      margin-bottom: 5px;
+      text-shadow: 2px 2px 0 var(--ui-shadow);
+    }
+
+    .score-value {
+      color: var(--ui-text);
+      font-size: 14px;
+      text-shadow: 
+        2px 2px 0 var(--ui-shadow),
+        0 0 10px var(--genesis-cyan);
+    }
+
+    /* Life Bar */
+    .life-bar {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .life-icon {
+      width: 20px;
+      height: 20px;
+      background: var(--genesis-red);
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+      box-shadow: 0 0 10px var(--genesis-red);
+      animation: pulse 2s infinite;
+    }
+
+    .life-icon.empty {
+      background: var(--genesis-gray);
+      animation: none;
+      opacity: 0.3;
+    }
+
+    /* Title Section */
+    .title-section {
+      position: absolute;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 200;
+    }
+
+    .main-title {
+      font-size: clamp(16px, 4vw, 32px);
+      color: var(--genesis-yellow);
+      text-shadow: 
+        4px 4px 0 var(--genesis-red),
+        6px 6px 0 var(--genesis-orange),
+        8px 8px 0 var(--ui-shadow),
+        0 0 30px var(--genesis-yellow);
+      animation: float 3s ease-in-out infinite;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      font-size: 10px;
+      color: var(--genesis-cyan);
+      text-shadow: 2px 2px 0 var(--ui-shadow);
+      animation: blink 2s infinite;
+      margin-bottom: 20px;
+    }
+
+    .copyright {
+      font-size: 8px;
+      color: var(--genesis-gray);
+      text-shadow: 1px 1px 0 var(--ui-shadow);
+    }
+
+    /* Character Select Style Module Card */
+    .module-select {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 300;
+      background: var(--ui-panel);
+      border: 4px solid var(--genesis-cyan);
+      padding: 30px;
+      box-shadow: 
+        0 0 0 2px var(--genesis-black),
+        0 0 0 6px var(--genesis-blue),
+        10px 10px 0 var(--ui-shadow),
+        inset 0 0 50px rgba(0,100,255,0.3);
+      max-width: 90%;
+      animation: none;
+      transition: all 0.3s;
+    }
+
+    .module-select.active {
+      animation: character-select-intro 0.5s ease-out;
+    }
+
+    @keyframes character-select-intro {
+      from {
+        transform: translate(-50%, -50%) scale(0) rotate(360deg);
+        opacity: 0;
+      }
+      to {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    .module-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .module-name {
+      font-size: 16px;
+      color: var(--genesis-yellow);
+      text-shadow: 
+        3px 3px 0 var(--genesis-red),
+        0 0 20px var(--genesis-yellow);
+      margin-bottom: 10px;
+      animation: pulse 1s infinite;
+    }
+
+    .module-stage {
+      font-size: 10px;
+      color: var(--genesis-green);
+      text-shadow: 2px 2px 0 var(--ui-shadow);
+    }
+
+    /* Character Select Grid */
+    .character-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .character-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .character-card {
+      background: linear-gradient(135deg, var(--genesis-dark-blue) 0%, var(--genesis-metal) 100%);
+      border: 3px solid var(--genesis-cyan);
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .character-card::before {
+      content: "";
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      width: 300%;
+      height: 300%;
+      background: linear-gradient(45deg, 
+        transparent 30%, 
+        rgba(255,255,255,0.3) 50%, 
+        transparent 70%);
+      transform: rotate(45deg);
+      transition: all 0.5s;
+    }
+
+    .character-card:hover {
+      transform: translateY(-5px) scale(1.05);
+      border-color: var(--genesis-yellow);
+      box-shadow: 
+        0 10px 0 var(--ui-shadow),
+        0 0 30px var(--genesis-cyan);
+    }
+
+    .character-card:hover::before {
+      top: -50%;
+      left: -50%;
+    }
+
+    .character-card:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .character-icon {
+      font-size: 32px;
+      text-align: center;
+      margin-bottom: 10px;
+      filter: 
+        drop-shadow(3px 3px 0 var(--ui-shadow))
+        drop-shadow(0 0 10px currentColor);
+      animation: float 2s ease-in-out infinite;
+    }
+
+    .character-card:nth-child(1) .character-icon { color: var(--genesis-cyan); animation-delay: 0s; }
+    .character-card:nth-child(2) .character-icon { color: var(--genesis-green); animation-delay: 0.5s; }
+    .character-card:nth-child(3) .character-icon { color: var(--genesis-yellow); animation-delay: 1s; }
+    .character-card:nth-child(4) .character-icon { color: var(--genesis-pink); animation-delay: 1.5s; }
+
+    .character-name {
+      font-size: 10px;
+      text-align: center;
+      color: var(--ui-text);
+      text-shadow: 2px 2px 0 var(--ui-shadow);
+      text-transform: uppercase;
+    }
+
+    .character-power {
+      display: flex;
+      gap: 2px;
+      margin-top: 8px;
+      justify-content: center;
+    }
+
+    .power-bar {
+      width: 8px;
+      height: 4px;
+      background: var(--genesis-green);
+      box-shadow: 0 0 5px var(--genesis-green);
+    }
+
+    .power-bar.empty {
+      background: var(--genesis-gray);
+      opacity: 0.3;
+      box-shadow: none;
+    }
+
+    /* Press Start Prompt */
+    .press-start {
+      text-align: center;
+      font-size: 12px;
+      color: var(--genesis-yellow);
+      text-shadow: 
+        2px 2px 0 var(--ui-shadow),
+        0 0 20px var(--genesis-yellow);
+      animation: blink 1s infinite;
+      margin-top: 20px;
+    }
+
+    /* Tab Viewer (Stage Screen) */
+    .stage-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--genesis-black);
+      z-index: 1000;
+      flex-direction: column;
+    }
+
+    .stage-screen.active {
+      display: flex;
+      animation: stage-transition 0.5s ease-out;
+    }
+
+    @keyframes stage-transition {
+      0% {
+        clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%);
+      }
+      100% {
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+      }
+    }
+
+    /* Stage Header */
+    .stage-header {
+      background: linear-gradient(180deg, var(--genesis-dark-blue) 0%, var(--ui-panel) 100%);
+      border-bottom: 4px solid var(--genesis-cyan);
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+    }
+
+    .stage-title {
+      font-size: 14px;
+      color: var(--genesis-yellow);
+      text-shadow: 
+        3px 3px 0 var(--genesis-red),
+        0 0 15px var(--genesis-yellow);
+      animation: pulse 2s infinite;
+    }
+
+    .pause-button {
+      background: var(--genesis-red);
+      border: 3px solid var(--genesis-yellow);
+      color: var(--ui-text);
+      padding: 8px 15px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      text-shadow: 2px 2px 0 var(--ui-shadow);
+      box-shadow: 
+        4px 4px 0 var(--ui-shadow),
+        inset 0 0 10px rgba(255,255,0,0.3);
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .pause-button:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        6px 6px 0 var(--ui-shadow),
+        0 0 20px var(--genesis-yellow);
+    }
+
+    .pause-button:active {
+      transform: scale(0.95);
+      box-shadow: 
+        2px 2px 0 var(--ui-shadow);
+    }
+
+    /* Stage Content Area */
+    .stage-content {
+      flex: 1;
+      position: relative;
+      background: 
+        linear-gradient(180deg, 
+          var(--genesis-dark-blue) 0%, 
+          var(--ui-panel) 50%, 
+          var(--genesis-dark-blue) 100%);
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    .stage-iframe {
+      width: 100%;
+      height: 100%;
+      border: 4px solid var(--genesis-metal);
+      border-radius: 8px;
+      box-shadow: 
+        inset 0 0 50px rgba(0,0,0,0.8),
+        0 0 30px rgba(0,100,255,0.5);
+      background: var(--genesis-black);
+    }
+
+    /* Loading Animation */
+    .loading-screen {
+      position: absolute;
+      inset: 0;
+      background: var(--genesis-black);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .loading-text {
+      font-size: 14px;
+      color: var(--genesis-cyan);
+      text-shadow: 
+        2px 2px 0 var(--ui-shadow),
+        0 0 20px var(--genesis-cyan);
+      margin-bottom: 20px;
+      animation: blink 0.5s infinite;
+    }
+
+    .loading-bar-container {
+      width: 200px;
+      height: 20px;
+      border: 3px solid var(--genesis-cyan);
+      background: var(--ui-panel);
+      position: relative;
+      box-shadow: 
+        inset 0 0 10px rgba(0,0,0,0.5),
+        0 0 20px rgba(0,255,255,0.3);
+    }
+
+    .loading-bar {
+      height: 100%;
+      background: linear-gradient(90deg, 
+        var(--genesis-green) 0%, 
+        var(--genesis-yellow) 50%, 
+        var(--genesis-green) 100%);
+      background-size: 200% 100%;
+      animation: 
+        loading-fill 2s ease-out,
+        loading-gradient 1s linear infinite;
+    }
+
+    @keyframes loading-fill {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    @keyframes loading-gradient {
+      from { background-position: 0% 50%; }
+      to { background-position: 200% 50%; }
+    }
+
+    /* Stage Footer */
+    .stage-footer {
+      background: var(--ui-panel);
+      border-top: 4px solid var(--genesis-cyan);
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-label {
+      color: var(--genesis-gray);
+      text-shadow: 1px 1px 0 var(--ui-shadow);
+    }
+
+    .status-value {
+      color: var(--genesis-green);
+      text-shadow: 
+        1px 1px 0 var(--ui-shadow),
+        0 0 10px var(--genesis-green);
+    }
+
+    /* Power-up Effects */
+    .powerup-text {
+      position: fixed;
+      font-size: 24px;
+      color: var(--genesis-yellow);
+      text-shadow: 
+        3px 3px 0 var(--genesis-red),
+        5px 5px 0 var(--genesis-orange),
+        7px 7px 0 var(--ui-shadow),
+        0 0 30px var(--genesis-yellow);
+      z-index: 5000;
+      pointer-events: none;
+      animation: powerup-fly 1s ease-out forwards;
+    }
+
+    @keyframes powerup-fly {
+      0% {
+        transform: translate(-50%, -50%) scale(0) rotate(-360deg);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.5) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -200px) scale(1) rotate(0deg);
+        opacity: 0;
+      }
+    }
+
+    /* Pixel Plane Animation */
+    .pixel-plane {
+      position: absolute;
+      width: 60px;
+      height: 30px;
+      top: 150px;
+      z-index: 50;
+      animation: fly-across 15s linear infinite;
+    }
+
+    @keyframes fly-across {
+      from {
+        left: -100px;
+      }
+      to {
+        left: 100%;
+      }
+    }
+
+    .pixel-plane::before {
+      content: "✈";
+      font-size: 40px;
+      position: absolute;
+      color: var(--genesis-white);
+      text-shadow: 
+        2px 2px 0 var(--ui-shadow),
+        0 0 10px rgba(255,255,255,0.5);
+      transform: scaleX(-1);
+    }
+
+    /* Start Button Easter Egg */
+    .konami-code {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      font-size: 8px;
+      color: var(--genesis-gray);
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 10000;
+    }
+
+    .konami-code.show {
+      opacity: 1;
+      animation: blink 0.5s 5;
+    }
+
+    /* Sound Effect Visuals */
+    .sfx-text {
+      position: fixed;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 6000;
+      pointer-events: none;
+      animation: sfx-pop 0.5s ease-out forwards;
+    }
+
+    @keyframes sfx-pop {
+      0% {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.2) rotate(10deg);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 0;
+      }
+    }
+
+    .sfx-text.perfect {
+      color: var(--genesis-yellow);
+      text-shadow: 
+        2px 2px 0 var(--genesis-red),
+        0 0 20px var(--genesis-yellow);
+    }
+
+    .sfx-text.good {
+      color: var(--genesis-green);
+      text-shadow: 
+        2px 2px 0 var(--ui-shadow),
+        0 0 20px var(--genesis-green);
+    }
+
+    .sfx-text.miss {
+      color: var(--genesis-red);
+      text-shadow: 
+        2px 2px 0 var(--ui-shadow),
+        0 0 20px var(--genesis-red);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <!-- Animated Background Layers -->
+    <div class="bg-layer bg-sky"></div>
+    <div class="bg-layer bg-clouds-far"></div>
+    <div class="bg-layer bg-clouds-near"></div>
+    <div class="bg-runway"></div>
+    
+    <!-- Flying Plane Easter Egg -->
+    <div class="pixel-plane"></div>
+
+    <!-- HUD Top Bar -->
+    <div class="hud-top">
+      <div class="score-panel">
+        <span class="score-label">SCORE</span>
+        <span class="score-value" id="score">0000000</span>
+      </div>
+      
+      <div class="score-panel">
+        <span class="score-label">STAGE</span>
+        <span class="score-value">1-1</span>
+      </div>
+      
+      <div class="score-panel">
+        <span class="score-label">LIVES</span>
+        <div class="life-bar">
+          <div class="life-icon"></div>
+          <div class="life-icon"></div>
+          <div class="life-icon"></div>
+          <div class="life-icon empty"></div>
+          <div class="life-icon empty"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Title Section -->
+    <div class="title-section">
+      <h1 class="main-title">AVIONICS MASTER</h1>
+      <div class="subtitle">INSERT COIN TO CONTINUE</div>
+      <div class="copyright">© 1994 SEGA × AEA TRAINING</div>
+    </div>
+
+    <!-- Character Select Style Module Screen -->
+    <div class="module-select active" id="character-select">
+      <div class="module-header">
+        <div class="module-name">SELECT YOUR TRAINING</div>
+        <div class="module-stage">STAGE 1: PITOT-STATIC SYSTEMS</div>
+      </div>
+      
+      <div class="character-grid">
+        <!-- Classroom Character -->
+        <button class="character-card" onclick="selectCharacter('classroom')">
+          <div class="character-icon">📚</div>
+          <div class="character-name">Classroom</div>
+          <div class="character-power">
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar empty"></div>
+          </div>
+        </button>
+
+        <!-- Flashcards Character -->
+        <button class="character-card" onclick="selectCharacter('flashcards')">
+          <div class="character-icon">⚡</div>
+          <div class="character-name">Flashcards</div>
+          <div class="character-power">
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar empty"></div>
+            <div class="power-bar empty"></div>
+          </div>
+        </button>
+
+        <!-- Practice Test Character -->
+        <button class="character-card" onclick="selectCharacter('practice')">
+          <div class="character-icon">🎯</div>
+          <div class="character-name">Practice</div>
+          <div class="character-power">
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+          </div>
+        </button>
+
+        <!-- AI Buddy Character -->
+        <button class="character-card" onclick="selectCharacter('ai-buddy')">
+          <div class="character-icon">🤖</div>
+          <div class="character-name">AI Buddy</div>
+          <div class="character-power">
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+            <div class="power-bar"></div>
+          </div>
+        </button>
+      </div>
+      
+      <div class="press-start">PRESS START</div>
+    </div>
+
+    <!-- Stage Screens (Tab Viewers) -->
+    <!-- Classroom Stage -->
+    <div class="stage-screen" id="classroom-stage">
+      <div class="stage-header">
+        <div class="stage-title">CLASSROOM ZONE</div>
+        <button class="pause-button" onclick="exitStage('classroom')">EXIT</button>
+      </div>
+      <div class="stage-content">
+        <div class="loading-screen" id="classroom-loading">
+          <div class="loading-text">LOADING STAGE...</div>
+          <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+          </div>
+        </div>
+        <iframe 
+          class="stage-iframe" 
+          id="classroom-iframe"
+          src=""
+          data-src="https://example.com/classroom-placeholder"
+          title="Classroom Stage"
+          style="display: none;"
+        ></iframe>
+      </div>
+      <div class="stage-footer">
+        <div class="status-item">
+          <span class="status-label">TIME:</span>
+          <span class="status-value" id="classroom-time">00:00</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">PROGRESS:</span>
+          <span class="status-value">0%</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">XP:</span>
+          <span class="status-value" id="classroom-xp">+0000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flashcards Stage -->
+    <div class="stage-screen" id="flashcards-stage">
+      <div class="stage-header">
+        <div class="stage-title">MEMORY DOJO</div>
+        <button class="pause-button" onclick="exitStage('flashcards')">EXIT</button>
+      </div>
+      <div class="stage-content">
+        <div class="loading-screen" id="flashcards-loading">
+          <div class="loading-text">LOADING CARDS...</div>
+          <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+          </div>
+        </div>
+        <iframe 
+          class="stage-iframe" 
+          id="flashcards-iframe"
+          src=""
+          data-src="https://aeaonlinetrainingbucket.s3.us-east-2.amazonaws.com/CAET+Practice+Test+v1.html"
+          title="Flashcards Stage"
+          style="display: none;"
+        ></iframe>
+      </div>
+      <div class="stage-footer">
+        <div class="status-item">
+          <span class="status-label">COMBO:</span>
+          <span class="status-value" id="combo-counter">x0</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">CARDS:</span>
+          <span class="status-value">0/50</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">STREAK:</span>
+          <span class="status-value">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Practice Stage -->
+    <div class="stage-screen" id="practice-stage">
+      <div class="stage-header">
+        <div class="stage-title">TRIAL BY FIRE</div>
+        <button class="pause-button" onclick="exitStage('practice')">EXIT</button>
+      </div>
+      <div class="stage-content">
+        <div class="loading-screen" id="practice-loading">
+          <div class="loading-text">GENERATING TEST...</div>
+          <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+          </div>
+        </div>
+        <iframe 
+          class="stage-iframe" 
+          id="practice-iframe"
+          src=""
+          data-src="https://aeaonlinetrainingbucket.s3.us-east-2.amazonaws.com/CAET+Practice+Test+v1.html"
+          title="Practice Stage"
+          style="display: none;"
+        ></iframe>
+      </div>
+      <div class="stage-footer">
+        <div class="status-item">
+          <span class="status-label">QUESTIONS:</span>
+          <span class="status-value">0/25</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">ACCURACY:</span>
+          <span class="status-value">0%</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">RANK:</span>
+          <span class="status-value">---</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Buddy Stage -->
+    <div class="stage-screen" id="ai-buddy-stage">
+      <div class="stage-header">
+        <div class="stage-title">CYBER MENTOR</div>
+        <button class="pause-button" onclick="exitStage('ai-buddy')">EXIT</button>
+      </div>
+      <div class="stage-content">
+        <div class="loading-screen" id="ai-buddy-loading">
+          <div class="loading-text">CONNECTING...</div>
+          <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+          </div>
+        </div>
+        <iframe 
+          class="stage-iframe" 
+          id="ai-buddy-iframe"
+          src=""
+          data-src="https://aeaonlinetrainingbucket.s3.us-east-2.amazonaws.com/CAET+Practice+Test+v1.html"
+          title="AI Buddy Stage"
+          style="display: none;"
+        ></iframe>
+      </div>
+      <div class="stage-footer">
+        <div class="status-item">
+          <span class="status-label">AI STATUS:</span>
+          <span class="status-value">ONLINE</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">KNOWLEDGE:</span>
+          <span class="status-value">∞</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">HELP LVL:</span>
+          <span class="status-value">MAX</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden Konami Code Hint -->
+    <div class="konami-code" id="konami">↑↑↓↓←→←→BA</div>
+  </div>
+
+  <script>
+    // Game State
+    let score = 0;
+    let currentStage = null;
+    let combo = 0;
+    let konamiIndex = 0;
+    const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+    
+    // Module URLs Configuration
+    const MODULE_URLS = {
+      classroom: "https://storage.googleapis.com/caet-prep/Principles%20of%20Electricity/fundamentals-of-direct-current-raw-6mYaejXk/content/index.html",
+      flashcards: "https://aeaonlinetrainingbucket.s3.us-east-2.amazonaws.com/5.+AET+-+Fundamentals+of+Avionics/pitot-static-flight-instruments-scorm12-3XLC5fct/scormcontent/index.html",
+      practice: "https://aeaonlinetrainingbucket.s3.us-east-2.amazonaws.com/CAET+Practice+Test+v1.html",
+      'ai-buddy': "https://notebooklm.google.com/notebook/64f77e37-194f-48bf-b2f3-de3558ba1b62"
+    };
+    
+    // Sound effect text generator
+    function createSFX(text, type, x, y) {
+      const sfx = document.createElement('div');
+      sfx.className = `sfx-text ${type}`;
+      sfx.textContent = text;
+      sfx.style.left = x + 'px';
+      sfx.style.top = y + 'px';
+      document.body.appendChild(sfx);
+      setTimeout(() => sfx.remove(), 500);
+    }
+    
+    // Power-up animation
+    function createPowerUp(text, x, y) {
+      const powerup = document.createElement('div');
+      powerup.className = 'powerup-text';
+      powerup.textContent = text;
+      powerup.style.left = x + 'px';
+      powerup.style.top = y + 'px';
+      document.body.appendChild(powerup);
+      setTimeout(() => powerup.remove(), 1000);
+    }
+    
+    // Select Character (Open Tab)
+    function selectCharacter(character) {
+      // Add score for selection
+      addScore(100);
+      
+      // Create power-up effect
+      createPowerUp('START!', window.innerWidth/2, window.innerHeight/2);
+      
+      // Sound effect visual
+      createSFX('BEEP!', 'good', event.clientX, event.clientY);
+      
+      // Hide character select
+      document.getElementById('character-select').style.display = 'none';
+      
+      // Show stage
+      currentStage = character;
+      const stage = document.getElementById(character + '-stage');
+      stage.classList.add('active');
+      
+      // Load iframe content
+      loadStageContent(character);
+      
+      // Start stage timer
+      startStageTimer(character);
+    }
+    
+    // Load Stage Content
+    function loadStageContent(stage) {
+      const iframe = document.getElementById(stage + '-iframe');
+      const loading = document.getElementById(stage + '-loading');
+      
+      if (!iframe.src) {
+        const url = iframe.getAttribute('data-src');
+        
+        // Simulate loading with progress
+        setTimeout(() => {
+          iframe.src = url;
+          iframe.onload = function() {
+            setTimeout(() => {
+              loading.style.display = 'none';
+              iframe.style.display = 'block';
+              
+              // Victory sound effect
+              createSFX('READY!', 'perfect', window.innerWidth/2, 100);
+              addScore(500);
+            }, 500);
+          };
+        }, 2000);
+      } else {
+        loading.style.display = 'none';
+        iframe.style.display = 'block';
+      }
+    }
+    
+    // Exit Stage (Return to Character Select)
+    function exitStage(stage) {
+      // Sound effect
+      createSFX('EXIT!', 'miss', event.clientX, event.clientY);
+      
+      // Hide stage
+      const stageEl = document.getElementById(stage + '-stage');
+      stageEl.classList.remove('active');
+      
+      // Show character select with animation
+      setTimeout(() => {
+        const select = document.getElementById('character-select');
+        select.style.display = 'block';
+        select.classList.add('active');
+      }, 300);
+      
+      currentStage = null;
+    }
+    
+    // Score System
+    function addScore(points) {
+      score += points;
+      const scoreEl = document.getElementById('score');
+      scoreEl.textContent = String(score).padStart(7, '0');
+      
+      // Animate score
+      scoreEl.style.animation = 'none';
+      setTimeout(() => {
+        scoreEl.style.animation = 'pulse 0.5s';
+      }, 10);
+    }
+    
+    // Stage Timer
+    function startStageTimer(stage) {
+      let seconds = 0;
+      const timerEl = document.getElementById(stage + '-time');
+      if (!timerEl) return;
+      
+      setInterval(() => {
+        if (currentStage === stage) {
+          seconds++;
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          timerEl.textContent = 
+            String(mins).padStart(2, '0') + ':' + 
+            String(secs).padStart(2, '0');
+            
+          // Add XP every 10 seconds
+          if (seconds % 10 === 0) {
+            addScore(50);
+            const xpEl = document.getElementById(stage + '-xp');
+            if (xpEl) {
+              xpEl.textContent = '+' + String(seconds * 5).padStart(4, '0');
+            }
+          }
+        }
+      }, 1000);
+    }
+    
+    // Konami Code Easter Egg
+    document.addEventListener('keydown', (e) => {
+      if (e.key === konamiCode[konamiIndex]) {
+        konamiIndex++;
+        if (konamiIndex === konamiCode.length) {
+          activateKonamiCode();
+          konamiIndex = 0;
+        }
+      } else {
+        konamiIndex = 0;
+      }
+      
+      // ESC to exit stages
+      if (e.key === 'Escape' && currentStage) {
+        exitStage(currentStage);
+      }
+    });
+    
+    function activateKonamiCode() {
+      const hint = document.getElementById('konami');
+      hint.classList.add('show');
+      setTimeout(() => hint.classList.remove('show'), 3000);
+      
+      // Bonus points!
+      addScore(30000);
+      createPowerUp('30 LIVES!', window.innerWidth/2, window.innerHeight/2);
+      
+      // Fill all life icons
+      document.querySelectorAll('.life-icon').forEach(icon => {
+        icon.classList.remove('empty');
+      });
+    }
+    
+    // Click sound effects
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.character-card')) {
+        createSFX('SELECT!', 'good', e.clientX, e.clientY);
+      } else if (e.target.closest('.pause-button')) {
+        createSFX('PAUSE!', 'miss', e.clientX, e.clientY);
+      }
+    });
+    
+    // Initial animations
+    window.addEventListener('load', () => {
+      // CRT turn on effect
+      document.body.style.animation = 'crt-on 0.5s ease-out';
+      
+      // Start attract mode
+      setTimeout(() => {
+        createSFX('SEGA!', 'perfect', window.innerWidth/2, 200);
+      }, 1000);
+      
+      // Random plane flyby
+      setInterval(() => {
+        const plane = document.querySelector('.pixel-plane');
+        plane.style.top = (100 + Math.random() * 200) + 'px';
+      }, 15000);
+    });
+    
+    // Update URLs function (for deployment)
+    function updateModuleURLs(urls) {
+      Object.keys(urls).forEach(stage => {
+        const iframe = document.getElementById(stage + '-iframe');
+        if (iframe) {
+          iframe.setAttribute('data-src', urls[stage]);
+        }
+      });
+    }
+    
+    // Combo System for Flashcards
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'FLASHCARD_RESULT') {
+        const comboEl = document.getElementById('combo-counter');
+        if (e.data.correct) {
+          combo++;
+          comboEl.textContent = 'x' + combo;
+          createSFX('PERFECT!', 'perfect', window.innerWidth/2, 200);
+          addScore(100 * combo);
+        } else {
+          combo = 0;
+          comboEl.textContent = 'x0';
+          createSFX('MISS!', 'miss', window.innerWidth/2, 200);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
