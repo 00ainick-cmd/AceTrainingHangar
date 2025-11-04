@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title> CAET Flash Cards – Standalone </title>
+  <style>
+    :root{
+      --bg: #f8fafc; /* slate-50 */
+      --card: #ffffff;
+      --text: #0f172a; /* slate-900 */
+      --muted: #64748b; /* slate-500 */
+      --border: #e2e8f0; /* slate-200 */
+      --ring: #cbd5e1; /* slate-300 */
+      --green: #16a34a; /* green-600 */
+      --green-50: #ecfdf5;
+      --yellow: #f59e0b; /* yellow-500 */
+      --yellow-50: #fffbeb;
+      --red: #dc2626; /* red-600 */
+      --red-50: #fef2f2;
+      --shadow: 0 10px 20px rgba(2, 6, 23, 0.06), 0 2px 6px rgba(2, 6, 23, 0.06);
+    }
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(to bottom,var(--bg),#fff);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{margin:0;font-size:28px;letter-spacing:-0.01em;display:flex;align-items:center;gap:10px}
+    .sparkle{width:24px;height:24px}
+    .deck-switch{display:inline-flex;border:1px solid var(--border);border-radius:999px;padding:6px;background:#fff;box-shadow:var(--shadow)}
+    .chip{border:1px solid transparent;background:transparent;color:var(--text);padding:6px 12px;border-radius:999px;cursor:pointer}
+    .chip.active{background:#111827;color:#fff}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
+    .card h2{margin:0;padding:16px 20px;border-bottom:1px solid var(--border);font-size:18px}
+    .card .content{padding:18px 20px}
+
+    .flip{position:relative;height:300px;border-radius:16px;border:1px solid var(--border);background:#fff;cursor:pointer;user-select:none;perspective:1000px}
+    .flip-inner{position:relative;height:100%;transform-style:preserve-3d;transition:transform .4s}
+    .flip .face{position:absolute;inset:0;display:grid;place-items:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:16px;text-align:center}
+    .flip .back{transform:rotateY(180deg)}
+    .flip.is-flipped .flip-inner{transform:rotateY(180deg)}
+
+    .meta{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+    .term{font-size:28px;font-weight:700;margin-top:6px}
+    .unit{font-size:14px;color:var(--muted);margin-top:4px}
+    .badge{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:12px;margin:4px 4px 0 0}
+
+    .def{max-width:70ch;font-size:18px;line-height:1.4;max-height:180px;overflow:auto;padding-right:8px}
+
+    .row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
+    .btn{appearance:none;border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer}
+    .btn:focus{outline:2px solid var(--ring);outline-offset:2px}
+    .btn-outline{background:#fff}
+    .btn-primary{background:#111827;color:#fff;border-color:#111827}
+    .btn-ghost{background:transparent}
+
+    .btn-green{color:var(--green);border-color:#bbf7d0;background:var(--green-50)}
+    .btn-green.active{background:var(--green);color:#fff;border-color:var(--green)}
+    .btn-yellow{color:var(--yellow);border-color:#fef3c7;background:var(--yellow-50)}
+    .btn-yellow.active{background:var(--yellow);color:#fff;border-color:var(--yellow)}
+    .btn-red{color:var(--red);border-color:#fecaca;background:var(--red-50)}
+    .btn-red.active{background:var(--red);color:#fff;border-color:var(--red)}
+
+    .list{max-height:330px;overflow:auto;padding-right:6px}
+    .list-item{border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px}
+    .list-item .title{font-weight:600}
+    .list-item .line{color:var(--muted);font-size:12px;margin-top:6px}
+
+    .bottom{margin-top:20px}
+    .tags{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{border:1px solid var(--border);padding:6px 10px;border-radius:999px;background:#fff;cursor:pointer}
+    .tag.active{background:#111827;color:#fff;border-color:#111827}
+
+    .search{display:flex;align-items:center;gap:10px;margin-top:12px}
+    .search input{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px}
+
+    .empty{padding:28px;text-align:center;color:var(--muted)}
+
+    @media (max-width:720px){
+      header{flex-direction:column;align-items:flex-start;gap:12px}
+      .row{flex-direction:column;align-items:stretch}
+      .def{max-height:150px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 2l1.9 4.6L18 8l-4.1 1.4L12 14l-1.9-4.6L6 8l4.1-1.4L12 2z"/>
+        </svg>
+        AEA Interactive Glossary
+      </h1>
+      <div class="deck-switch" id="deckSwitch">
+        <button class="chip active" data-deck="all">All</button>
+        <button class="chip" data-deck="easy">Easy <span class="count" data-count="easy"></span></button>
+        <button class="chip" data-deck="medium">Medium <span class="count" data-count="medium"></span></button>
+        <button class="chip" data-deck="difficult">Difficult <span class="count" data-count="difficult"></span></button>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Study <span class="meta" style="margin-left:8px">[Space: Flip • ←/→: Prev/Next]</span></h2>
+      <div class="content">
+        <div class="flip" id="flip">
+          <div class="flip-inner" id="flipInner">
+            <div class="face front" id="front"></div>
+            <div class="face back" id="back"></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row" id="ratingRow">
+            <button class="btn btn-green" id="rateEasy">Easy</button>
+            <button class="btn btn-yellow" id="rateMedium">Medium</button>
+            <button class="btn btn-red" id="rateDifficult">Difficult</button>
+          </div>
+          <div class="row">
+            <button class="btn btn-outline" id="prev">Prev</button>
+            <button class="btn btn-primary" id="next">Next ▶</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>List View</h2>
+      <div class="content">
+        <div class="list" id="list"></div>
+      </div>
+    </section>
+
+    <section class="card bottom" style="margin-bottom:8px">
+      <h2>Filter</h2>
+      <div class="content">
+        <div class="tags" id="tags"></div>
+        <div class="search">
+          <input id="search" type="search" placeholder="Search term, definition, unit, or tag" />
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function(){
+  // ---------- Data (embedded directly – no document.write) ----------
+  const FIXED_CARDS = [
+  
+  
+
+  
+  {
+    "term": "Alternating Current (AC)",
+    "definition": "Electric current that reverses direction periodically, typically a sine wave. Common in aircraft power and instruments.",
+    "analogy": "Water sloshing back and forth at a steady rhythm.",
+    "unit": "AC Fundamentals",
+    "tags": ""
+  },
+  {
+    "term": "Hertz (Hz)",
+    "definition": "Unit of frequency: how many complete AC cycles occur each second.",
+    "analogy": "Beats per second on a metronome.",
+    "unit": "AC Fundamentals",
+    "tags": "frequency"
+  },
+  {
+    "term": "Frequency",
+    "definition": "Rate of repetition of an AC waveform. Many aircraft use 400 Hz for lighter components and smoother power.",
+    "analogy": "How fast the rhythm is set for the system.",
+    "unit": "AC Fundamentals",
+    "tags": "frequency|aircraft"
+  },
+  {
+    "term": "Sine Wave",
+    "definition": "Smooth, repeating AC waveform used as the standard reference for measurements.",
+    "analogy": "A regular ocean swell instead of choppy waves.",
+    "unit": "AC Fundamentals",
+    "tags": "waveform"
+  },
+  {
+    "term": "Peak Voltage (Vp)",
+    "definition": "Highest instantaneous value of the AC wave (positive or negative).",
+    "analogy": "The top of the tallest wave crest.",
+    "unit": "AC Fundamentals",
+    "tags": "waveform"
+  },
+  {
+    "term": "Peak-to-Peak Voltage (Vpp)",
+    "definition": "Total swing from lowest trough to highest crest. For a sine wave, Vpp = 2 × Vp.",
+    "analogy": "From the bottom of the valley to the top of the hill.",
+    "unit": "AC Fundamentals",
+    "tags": "waveform"
+  },
+  {
+    "term": "RMS Voltage (Vrms)",
+    "definition": "DC-equivalent voltage that delivers the same heating as AC. For sine waves, Vrms ≈ 0.707 × Vp.",
+    "analogy": "The steady push that matches the average work of the sloshing flow.",
+    "unit": "AC Fundamentals",
+    "tags": "calculation"
+  },
+  {
+    "term": "Inductor",
+    "definition": "Coil that stores energy in a magnetic field and resists sudden changes in current.",
+    "analogy": "A flywheel that smooths jerky motion.",
+    "unit": "AC Fundamentals",
+    "tags": "component"
+  },
+  {
+    "term": "Capacitor",
+    "definition": "Two plates with a dielectric that store energy in an electric field and resist sudden voltage changes.",
+    "analogy": "A diaphragm tank that absorbs pressure pulses.",
+    "unit": "AC Fundamentals",
+    "tags": "component"
+  },
+  {
+    "term": "Inductive Reactance (Xl)",
+    "definition": "How an inductor resists AC: Xl = 2πfL. Higher frequency or more inductance means more opposition.",
+    "analogy": "A heavier flywheel that’s harder to speed up quickly.",
+    "unit": "AC Fundamentals",
+    "tags": "formula|inductor"
+  },
+  {
+    "term": "Capacitive Reactance (Xc)",
+    "definition": "How a capacitor resists AC: Xc = 1/(2πfC). Higher frequency or more capacitance means less opposition.",
+    "analogy": "A flexible diaphragm that yields more easily when you pump faster.",
+    "unit": "AC Fundamentals",
+    "tags": "formula|capacitor"
+  },
+  {
+    "term": "Transformer",
+    "definition": "AC device with primary/secondary windings that steps voltage up or down and provides isolation.",
+    "analogy": "Two gears on the same shaft trading speed for torque.",
+    "unit": "AC Fundamentals",
+    "tags": "power|isolation"
+  },
+  {
+    "term": "Turns Ratio",
+    "definition": "Winding ratio that sets voltage change: more secondary turns raise voltage, fewer lower it.",
+    "analogy": "Gear ratio that decides output speed.",
+    "unit": "AC Fundamentals",
+    "tags": "transformer|formula"
+  },
+  {
+    "term": "Rectifier",
+    "definition": "Diode circuit that converts AC to DC. Half-wave uses one diode; full-wave bridge uses four for smoother output.",
+    "analogy": "Check valves that allow one-way flow.",
+    "unit": "AC Fundamentals",
+    "tags": "conversion"
+  },
+  {
+    "term": "Ripple",
+    "definition": "Leftover AC variation on a DC line after rectification and filtering. Too much ripple causes noise and glitches.",
+    "analogy": "Small waves left in the tank after the slosh settles.",
+    "unit": "AC Fundamentals",
+    "tags": "power quality"
+  },
+  {
+    "term": "Oscilloscope",
+    "definition": "Instrument that plots voltage versus time so you can see amplitude, shape, and frequency.",
+    "analogy": "A high-speed camera for electrical signals.",
+    "unit": "AC Fundamentals",
+    "tags": "measurement|test"
+  },
+  {
+    "term": "Time/Div",
+    "definition": "Scope’s horizontal scale that sets how much time each screen division represents.",
+    "analogy": "Shutter timing that decides how much motion you see.",
+    "unit": "AC Fundamentals",
+    "tags": "measurement|scope"
+  },
+  {
+    "term": "Volts/Div",
+    "definition": "Scope’s vertical scale that sets how much voltage each division represents.",
+    "analogy": "Zoom that makes small or big waves visible.",
+    "unit": "AC Fundamentals",
+    "tags": "measurement|scope"
+  },
+  {
+    "term": "Probe Attenuation (×1/×10)",
+    "definition": "Scope probes often reduce the signal (×10) to extend range and reduce loading; match the probe and scope settings.",
+    "analogy": "Reading pressure through a reducer so the gauge isn’t overwhelmed.",
+    "unit": "AC Fundamentals",
+    "tags": "measurement|procedure"
+  },
+  {
+    "term": "AC vs DC Coupling (Scope)",
+    "definition": "AC coupling blocks DC and shows only variations; DC coupling shows the full signal including the DC level.",
+    "analogy": "A filter that hides the steady water level and shows only the ripples.",
+    "unit": "AC Fundamentals",
+    "tags": "measurement|scope"
+  },
+  {
+    "term": "Measure AC Voltage (DMM)",
+    "definition": "Set meter to VAC and probe in parallel across the points of interest. For non-sine or higher-frequency signals, use a true-RMS meter.",
+    "analogy": "Sampling two points on a tank to read wave height.",
+    "unit": "AC Fundamentals",
+    "tags": "measurement|procedure"
+  },
+  {
+    "term": "400 Hz Aircraft AC",
+    "definition": "Common aircraft standard (115/200 VAC at 400 Hz) enabling lighter transformers and stable instrument power.",
+    "analogy": "A faster rhythm that keeps components compact and responsive.",
+    "unit": "AC Fundamentals",
+    "tags": "aircraft|spec"
+  }
+
+
+
+
+
+
+  ];
+
+  function uidFrom(str){
+    let h=0; for(let i=0;i<str.length;i++){ h=(h<<5)-h+str.charCodeAt(i); h|=0 }
+    return Math.abs(h).toString(36);
+  }
+  function normalizeTags(t){
+    if(Array.isArray(t)) return t.map(s=>String(s).trim()).filter(Boolean);
+    if(typeof t === 'string') return t.split(/[|,]/).map(s=>s.trim()).filter(Boolean);
+    return [];
+  }
+  const DATA = FIXED_CARDS.map(c=>({ ...c, id: uidFrom(c.term+'::'+c.definition), tags: normalizeTags(c.tags) }));
+
+  // ---------- Storage ----------
+  const LS_KEY = 'glossary.mastery';
+  function loadMap(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||{} }catch{ return {} } }
+  function saveMap(m){ try{ localStorage.setItem(LS_KEY, JSON.stringify(m)) }catch{} }
+
+  // ---------- SM-2 ----------
+  const DAY = 24*60*60*1000;
+  function scheduleNext(state, rating){
+    const q = rating==='difficult'?2: rating==='medium'?4:5;
+    let { reps=0, ivl=0, ease=2.5 } = state||{};
+    const now = Date.now();
+    if(q < 3){ reps=0; ivl=1; }
+    else { if(reps===0) ivl=1; else if(reps===1) ivl=6; else ivl=Math.max(1, Math.round(ivl*ease)); reps+=1; }
+    ease = Math.max(1.3, ease + 0.1 - (5-q)*(0.08 + (5-q)*0.02));
+    const due = now + ivl*DAY;
+    return { ...state, rating, reps, ivl, ease, due, last: now };
+  }
+
+  // ---------- State ----------
+  const state = {
+    mastery: loadMap(),
+    deck: 'all',
+    query: '',
+    tags: new Set(),
+    idx: 0,
+    flipped: false
+  };
+
+  // ---------- Elements ----------
+  const $front = document.getElementById('front');
+  const $back = document.getElementById('back');
+  const $flip = document.getElementById('flip');
+  const $list = document.getElementById('list');
+  const $tags = document.getElementById('tags');
+  const $search = document.getElementById('search');
+  const $prev = document.getElementById('prev');
+  const $next = document.getElementById('next');
+  const $rateEasy = document.getElementById('rateEasy');
+  const $rateMedium = document.getElementById('rateMedium');
+  const $rateDifficult = document.getElementById('rateDifficult');
+  const $chips = Array.from(document.querySelectorAll('.deck-switch .chip'));
+  const $counts = {
+    easy: document.querySelector('[data-count="easy"]'),
+    medium: document.querySelector('[data-count="medium"]'),
+    difficult: document.querySelector('[data-count="difficult"]')
+  };
+
+  // ---------- Derived ----------
+  function filtered(){
+    const q = state.query.trim().toLowerCase();
+    const base = DATA;
+    const byQ = q ? base.filter(d => (d.term||'').toLowerCase().includes(q) || (d.definition||'').toLowerCase().includes(q) || (d.unit||'').toLowerCase().includes(q) || (d.tags||[]).some(t=>t.toLowerCase().includes(q))) : base;
+    const byTags = state.tags.size ? byQ.filter(d => (d.tags||[]).some(t=>state.tags.has(t))) : byQ;
+    const byDeck = state.deck==='all' ? byTags : byTags.filter(d => (state.mastery[d.id]?.rating||'medium') === state.deck);
+    return byDeck;
+  }
+
+  function computeTagIndex(){
+    const counts = {};
+    DATA.forEach(it => (it.tags||[]).forEach(t => { if(!t) return; counts[t]=(counts[t]||0)+1; }));
+    return Object.entries(counts).sort((a,b)=> b[1]-a[1] || String(a[0]).localeCompare(String(b[0])));
+  }
+
+  function computeCounts(){
+    const easy = DATA.filter(d => (state.mastery[d.id]?.rating||'medium')==='easy').length;
+    const med  = DATA.filter(d => (state.mastery[d.id]?.rating||'medium')==='medium').length;
+    const dif  = DATA.filter(d => (state.mastery[d.id]?.rating||'medium')==='difficult').length;
+    $counts.easy.textContent = `(${easy})`;
+    $counts.medium.textContent = `(${med})`;
+    $counts.difficult.textContent = `(${dif})`;
+  }
+
+  // ---------- Render ----------
+  function renderCard(){
+    const items = filtered();
+    if(items.length===0){
+      $front.innerHTML = `<div class="empty">No terms match your search or selected tags.</div>`;
+      $back.innerHTML = '';
+      return;
+    }
+    if(state.idx >= items.length) state.idx = 0;
+    const cur = items[state.idx];
+    const rating = (state.mastery[cur.id]?.rating)||'medium';
+    $front.innerHTML = `
+      <div>
+        <div class="meta">Term</div>
+        <div class="term">${escapeHTML(cur.term)}</div>
+        <div class="unit">${escapeHTML(cur.unit||'')}</div>
+        <div style="margin-top:8px">${(cur.tags||[]).map(t=>`<span class="badge">${escapeHTML(t)}</span>`).join('')}</div>
+      </div>`;
+    $back.innerHTML = `
+      <div>
+        <div class="meta">Definition</div>
+        <div class="def">${escapeHTML(cur.definition)}</div>
+      </div>`;
+
+    setActive($rateEasy, rating==='easy');
+    setActive($rateMedium, rating==='medium');
+    setActive($rateDifficult, rating==='difficult');
+  }
+
+  function renderList(){
+    const items = filtered();
+    if(items.length===0){ $list.innerHTML = `<div class="empty">No terms match your search or selected tags.</div>`; return; }
+    $list.innerHTML = items.map(it=>{
+      const r = (state.mastery[it.id]?.rating)||'medium';
+      const color = r==='easy' ? 'background:var(--green);color:#fff' : r==='medium' ? 'background:var(--yellow);color:#fff' : 'background:var(--red);color:#fff';
+      return `<div class="list-item">
+        <div class="title">${escapeHTML(it.term)}</div>
+        <div class="line">${escapeHTML(it.definition)}</div>
+        <div class="line">${escapeHTML(it.unit||'')}${(it.tags||[]).length?' • ':''}${(it.tags||[]).map(escapeHTML).join(', ')}</div>
+        <div class="line"><span class="badge" style="${color}">${r[0].toUpperCase()+r.slice(1)}</span></div>
+      </div>`
+    }).join('');
+  }
+
+  function renderTags(){
+    const idx = computeTagIndex();
+    $tags.innerHTML = idx.slice(0,24).map(([tag,count])=>{
+      const active = state.tags.has(tag);
+      return `<button class="tag ${active?'active':''}" data-tag="${encodeURIComponent(tag)}">${escapeHTML(tag)} <span style="opacity:.7">(${count})</span></button>`;
+    }).join('') + (state.tags.size? ' <button class="tag" id="clearTags">Clear</button>': '');
+  }
+
+  function renderAll(){
+    computeCounts();
+    renderCard();
+    renderList();
+    renderTags();
+  }
+
+  // ---------- Utils ----------
+  function setActive(btn, on){
+    const classes = btn.className.split(' ').filter(Boolean);
+    const has = classes.includes('active');
+    if(on && !has) btn.className += ' active';
+    if(!on && has) btn.className = classes.filter(c=>c!=='active').join(' ');
+  }
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
+  }
+
+  // ---------- Events ----------
+  $flip.addEventListener('click', ()=>{ state.flipped=!state.flipped; $flip.classList.toggle('is-flipped', state.flipped); });
+  $prev.addEventListener('click', ()=>{ const len=filtered().length||1; state.flipped=false; state.idx=(state.idx-1+len)%len; renderCard(); });
+  $next.addEventListener('click', ()=>{ const len=filtered().length||1; state.flipped=false; state.idx=(state.idx+1)%len; renderCard(); });
+
+  $rateEasy.addEventListener('click', ()=>rate('easy'));
+  $rateMedium.addEventListener('click', ()=>rate('medium'));
+  $rateDifficult.addEventListener('click', ()=>rate('difficult'));
+
+  $chips.forEach(ch=> ch.addEventListener('click', ()=>{
+    $chips.forEach(b=>b.classList.remove('active'));
+    ch.classList.add('active');
+    state.deck = ch.dataset.deck;
+    state.idx = 0; state.flipped=false; $flip.classList.remove('is-flipped');
+    renderAll();
+  }));
+
+  $tags.addEventListener('click', (e)=>{
+    const t = e.target.closest('[data-tag]');
+    if(t){
+      const tag = decodeURIComponent(t.getAttribute('data-tag'));
+      if(state.tags.has(tag)) state.tags.delete(tag); else state.tags.add(tag);
+      state.idx=0; state.flipped=false; $flip.classList.remove('is-flipped');
+      renderAll();
+    }
+    if(e.target && e.target.id==='clearTags'){ state.tags.clear(); renderAll(); }
+  });
+
+  $search.addEventListener('input', ()=>{ state.query = $search.value; state.idx=0; renderAll(); });
+
+  window.addEventListener('keydown', (e)=>{
+    const tag = (e.target && e.target.tagName||'').toLowerCase();
+    if(tag==='input' || tag==='textarea') return;
+    if(e.code==='ArrowLeft'){ e.preventDefault(); $prev.click(); }
+    if(e.code==='ArrowRight'){ e.preventDefault(); $next.click(); }
+    if(e.code==='Space'){ e.preventDefault(); $flip.click(); }
+  });
+
+  function rate(level){
+    const items = filtered(); if(items.length===0) return;
+    const cur = items[state.idx];
+    const st = state.mastery[cur.id] || { rating:'medium', seen:0, correct:0, last:0, reps:0, ivl:0, ease:2.5, due:0 };
+    const next = scheduleNext(st, level);
+    state.mastery[cur.id] = next; saveMap(state.mastery);
+    computeCounts();
+    $next.click();
+  }
+
+  // ---------- Init ----------
+  DATA.forEach(it=>{ if(!state.mastery[it.id]) state.mastery[it.id] = { rating:'medium', seen:0, correct:0, last:0, reps:0, ivl:0, ease:2.5, due:0 }; });
+  saveMap(state.mastery);
+  renderAll();
+
+  // ---------- Lightweight tests (no special chars) ----------
+  ;(function runTests(){
+    try{
+      if(!(Array.isArray(DATA) && DATA.length>0)) console.error('Test failed: dataset missing');
+      const total = DATA.length;
+      const counts = ['easy','medium','difficult'].map(k=> DATA.filter(d => (state.mastery[d.id]?.rating||'medium')===k).length).reduce((a,b)=>a+b,0);
+      if(!(counts<=total)) console.error('Test failed: deck counts');
+    }catch(e){ console.error('Self-test error', e); }
+  })();
+})();
+</script>
+</body>
+</html>
