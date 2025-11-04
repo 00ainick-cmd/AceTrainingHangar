@@ -1695,5 +1695,24 @@ document.addEventListener('click', () => { ensureAudio(); }, { once: true });
 
 init();
 </script>
+  <script>
+// Call this when Jeopardy game ends
+function reportJeopardyScore(playerScore, aiScore) {
+  const totalScore = playerScore + aiScore;
+  const percentage = totalScore > 0 ? Math.round((playerScore / totalScore) * 100) : 0;
+  
+  console.log(`Jeopardy completed: Player ${playerScore}, AI ${aiScore}, Percentage: ${percentage}%`);
+  
+  // Send to parent page
+  if (window.parent && window.parent.completeModule) {
+    window.parent.completeModule('jeopardy', percentage);
+  } else {
+    alert(`Game Complete!\nYour Score: ${playerScore}\nAI Score: ${aiScore}\n\n(Running in standalone mode - no XP awarded)`);
+  }
+}
+
+// EXAMPLE: When game ends, call this:
+// reportJeopardyScore(1200, 800);  // Player won with 1200 points vs AI's 800
+</script>
 </body>
 </html>
