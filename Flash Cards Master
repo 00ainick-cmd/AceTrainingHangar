@@ -149,7 +149,6 @@
   
 
   
-[
   {
     "term": "Voltage (V)",
     "definition": "The electrical pressure or potential difference that causes electrons to flow, often symbolized as E (electromotive force) or V, and is measured in Volts (V) [4-6]. In aircraft, standard DC voltages are typically 14V or 28V [3, 4, 7, 8].",
@@ -360,12 +359,8 @@
     "unit": "DC 101 (Safety)",
     "tags": "safety|maintenance"
   }
-
-
-
-
-
   ];
+
 
   function uidFrom(str){
     let h=0; for(let i=0;i<str.length;i++){ h=(h<<5)-h+str.charCodeAt(i); h|=0 }
