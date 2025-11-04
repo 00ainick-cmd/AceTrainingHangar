@@ -1437,6 +1437,44 @@ function bindEventHandlers() {
 // Start the app when page loads
 window.addEventListener('load', initializeApp);
 </script>
+<script>
+// Function to detect which mode we're in
+function detectMode() {
+  try {
+    if (window.parent && window.parent.document) {
+      const parentDoc = window.parent.document;
+      const flashcardsIframe = parentDoc.getElementById('flashcards-iframe');
+      const practiceIframe = parentDoc.getElementById('practice-iframe');
+      
+      if (flashcardsIframe && flashcardsIframe.contentWindow === window) {
+        return 'flashcards';
+      } else if (practiceIframe && practiceIframe.contentWindow === window) {
+        return 'practice';
+      }
+    }
+  } catch(e) {
+    console.log('Running standalone');
+  }
+  return 'practice';
+}
 
+// Call this when the test is completed
+function reportTestScore(userScore, totalPossible) {
+  const percentage = Math.round((userScore / totalPossible) * 100);
+  const mode = detectMode();
+  
+  console.log(`Test completed in ${mode} mode: ${percentage}%`);
+  
+  // Send to parent page
+  if (window.parent && window.parent.completeModule) {
+    window.parent.completeModule(mode, percentage);
+  } else {
+    alert(`Test Complete!\nScore: ${percentage}%\n\n(Running in standalone mode - no XP awarded)`);
+  }
+}
+
+// EXAMPLE: When your test ends, call this:
+// reportTestScore(85, 100);  // User got 85 out of 100 points
+</script>
 </body>
 </html>
