@@ -1891,35 +1891,7 @@ function createEndSessionButton() {
   console.log('✅ End Session button created');
 }
 
-// Create TEST button (for debugging)
-function createTestButton() {
-  const btn = document.createElement('button');
-  btn.innerHTML = '🧪 TEST';
-  btn.style.cssText = `
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 99999;
-    padding: 10px 20px;
-    background: #ef4444;
-    color: white;
-    border: 2px solid white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    font-family: system-ui, sans-serif;
-  `;
-  
-  btn.onclick = function() {
-    console.log('🧪 TEST button clicked - simulating 60% win');
-    reportJeopardyScore(1200, 800);
-  };
-  
-  document.body.appendChild(btn);
-  console.log('✅ Test button created');
-}
+
 
 // Initialize when page loads
 window.addEventListener('DOMContentLoaded', function() {
@@ -1928,7 +1900,6 @@ window.addEventListener('DOMContentLoaded', function() {
   // Wait a bit for the game to fully load
   setTimeout(function() {
     createEndSessionButton();
-    createTestButton();
     console.log('✅ All buttons ready');
   }, 1500);
 });
