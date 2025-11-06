@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>High-Density Contact Crimping - Part 145 Training</title>
+    <title>High-Density D-Sub Contact Crimping - Part 145 Training</title>
     <style>
         * {
             margin: 0;
@@ -233,24 +233,27 @@
     <div id="canvas-container"></div>
 
     <!-- 3D Labels -->
+    <div id="label-wire" class="label-3d">
+        MIL-W-22759/16<br>22 AWG White Wire
+    </div>
     <div id="label-strip" class="label-3d">
-        Strip Length: 0.095" (2.4mm)<br>Per M22520/2-01
+        Strip Length: 0.095"<br>(2.4mm / 3/32")
     </div>
     <div id="label-crimp" class="label-3d">
-        Wire Barrel Crimp<br>4-Indent Pattern
+        Wire Barrel<br>4-Indent Crimp
     </div>
     <div id="label-insulation" class="label-3d">
-        Insulation Support<br>Crimped on Jacket Only
+        Insulation Support<br>No Crushed Jacket
     </div>
-    <div id="label-contact" class="label-3d">
-        Gold Plated Contact<br>Size 22D Male Pin
+    <div id="label-retention" class="label-3d">
+        Retention Shoulder<br>Locks in Connector
     </div>
-    <div id="label-inspection" class="label-3d">
-        Inspection Hole<br>Verify Conductor Present
+    <div id="label-pin" class="label-3d">
+        Gold Plated Pin<br>Size 22D Male
     </div>
 
     <div id="info-panel">
-        <h1>⚡ HD Contact Crimping Training</h1>
+        <h1>⚡ HD D-Sub Contact Crimping</h1>
         <div class="subtitle">Part 145 Certified • AC 43.13-1B Ch.11</div>
 
         <h2>Contact Specifications</h2>
@@ -330,7 +333,7 @@
         scene.fog = new THREE.Fog(0xe8f4f8, 50, 100);
 
         const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(25, 15, 25);
+        camera.position.set(20, 12, 20);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -341,161 +344,123 @@
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         // Enhanced lighting for realism
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
-        const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 0.9);
         mainLight.position.set(15, 20, 10);
         mainLight.castShadow = true;
         mainLight.shadow.mapSize.width = 2048;
         mainLight.shadow.mapSize.height = 2048;
         scene.add(mainLight);
 
-        const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.3);
+        const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.4);
         fillLight1.position.set(-15, 10, -10);
         scene.add(fillLight1);
 
-        const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.2);
+        const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
         fillLight2.position.set(0, -10, 10);
         scene.add(fillLight2);
 
-        const rimLight = new THREE.DirectionalLight(0xadd8e6, 0.4);
+        const rimLight = new THREE.DirectionalLight(0xadd8e6, 0.5);
         rimLight.position.set(-10, 5, -15);
         scene.add(rimLight);
 
         // Realistic Materials
-        const whiteInsulationMaterial = new THREE.MeshStandardMaterial({
-            color: 0xf5f5f5,
-            metalness: 0.05,
-            roughness: 0.6,
-            envMapIntensity: 0.3
+        const whiteWireMaterial = new THREE.MeshStandardMaterial({
+            color: 0xf8f8f8,
+            metalness: 0.0,
+            roughness: 0.7
         });
 
-        const copperStrandMaterial = new THREE.MeshStandardMaterial({
+        const copperMaterial = new THREE.MeshStandardMaterial({
             color: 0xd4774e,
-            metalness: 0.7,
-            roughness: 0.3
+            metalness: 0.75,
+            roughness: 0.25
         });
 
         const goldPlateMaterial = new THREE.MeshStandardMaterial({
             color: 0xffd700,
             metalness: 0.95,
             roughness: 0.05,
-            envMapIntensity: 1.0
+            envMapIntensity: 1.2
         });
 
         const silverCrimpMaterial = new THREE.MeshStandardMaterial({
-            color: 0xe0e0e0,
-            metalness: 0.9,
-            roughness: 0.15
+            color: 0xe8e8e8,
+            metalness: 0.92,
+            roughness: 0.12
         });
 
-        const crimpedMetalMaterial = new THREE.MeshStandardMaterial({
-            color: 0xc0c0c0,
-            metalness: 0.85,
+        const crimpIndentMaterial = new THREE.MeshStandardMaterial({
+            color: 0xb0b0b0,
+            metalness: 0.88,
             roughness: 0.25
         });
 
         // Main assembly group
         const contactAssembly = new THREE.Group();
 
-        // White avionics wire insulation (MIL-W-22759)
-        const wireLength = 40;
-        const wireOuterDiameter = 0.8; // 22 AWG with insulation
-        const insulationGeometry = new THREE.CylinderGeometry(
-            wireOuterDiameter, wireOuterDiameter, wireLength, 32
-        );
-        const wireInsulation = new THREE.Mesh(insulationGeometry, whiteInsulationMaterial);
-        wireInsulation.rotation.z = Math.PI / 2;
-        wireInsulation.position.x = -wireLength / 2 - 3;
-        wireInsulation.castShadow = true;
-        wireInsulation.receiveShadow = true;
-        contactAssembly.add(wireInsulation);
+        // ===== WHITE WIRE (Most important - make it clearly visible!) =====
+        const wireLength = 50;
+        const wireRadius = 0.65; // 22 AWG with insulation
+        const wireGeometry = new THREE.CylinderGeometry(wireRadius, wireRadius, wireLength, 32);
+        const wire = new THREE.Mesh(wireGeometry, whiteWireMaterial);
+        wire.rotation.z = Math.PI / 2;
+        wire.position.x = -15; // Positioned to extend backwards from contact
+        wire.castShadow = true;
+        wire.receiveShadow = true;
+        contactAssembly.add(wire);
 
-        // Stripped conductor section with individual strands
-        const stripLength = 1.2; // 3/32" scaled
-        const conductorDiameter = 0.4; // 22 AWG bare conductor
+        // ===== STRIPPED CONDUCTOR (visible copper strands) =====
+        const stripLength = 2.5;
         const strandGroup = new THREE.Group();
+        strandGroup.position.x = 10.2; // Position at front of wire
 
-        // 7 strand wire construction (realistic for 22 AWG)
-        const strandRadius = 0.06;
+        // 7 strand wire construction
+        const strandRadius = 0.08;
         const strandPositions = [
-            { y: 0, z: 0 }, // center
-            { y: 0.12, z: 0 },
-            { y: -0.12, z: 0 },
-            { y: 0, z: 0.12 },
-            { y: 0, z: -0.12 },
-            { y: 0.085, z: 0.085 },
-            { y: -0.085, z: -0.085 }
+            { y: 0, z: 0 }, // center strand
+            { y: 0.15, z: 0 },
+            { y: -0.15, z: 0 },
+            { y: 0.075, z: 0.13 },
+            { y: 0.075, z: -0.13 },
+            { y: -0.075, z: 0.13 },
+            { y: -0.075, z: -0.13 }
         ];
 
         strandPositions.forEach(pos => {
             const strandGeometry = new THREE.CylinderGeometry(
                 strandRadius, strandRadius, stripLength, 12
             );
-            const strand = new THREE.Mesh(strandGeometry, copperStrandMaterial);
+            const strand = new THREE.Mesh(strandGeometry, copperMaterial);
             strand.rotation.z = Math.PI / 2;
-            strand.position.set(stripLength / 2, pos.y, pos.z);
+            strand.position.set(0, pos.y, pos.z);
             strand.castShadow = true;
             strandGroup.add(strand);
         });
 
         contactAssembly.add(strandGroup);
 
-        // High-density contact assembly
+        // ===== HD D-SUB CONTACT ASSEMBLY =====
         const contactGroup = new THREE.Group();
 
-        // Wire barrel (conductor crimp area) - 4 indent crimp
-        const wireBarrelLength = 1.5;
-        const wireBarrelRadius = 0.5;
-        const wireBarrelGeometry = new THREE.CylinderGeometry(
-            wireBarrelRadius, wireBarrelRadius, wireBarrelLength, 8
-        );
-        const wireBarrel = new THREE.Mesh(wireBarrelGeometry, silverCrimpMaterial);
-        wireBarrel.rotation.z = Math.PI / 2;
-        wireBarrel.position.x = 0.5;
-        wireBarrel.castShadow = true;
-
-        // Add 4 crimp indentations (realistic)
-        const indentGeometry = new THREE.BoxGeometry(0.08, 0.9, 0.06);
-        const indentMaterial = new THREE.MeshStandardMaterial({
-            color: 0xa8a8a8,
-            metalness: 0.9,
-            roughness: 0.3
-        });
-
-        for (let i = 0; i < 4; i++) {
-            const angle = (i / 4) * Math.PI * 2;
-            const indent = new THREE.Mesh(indentGeometry, indentMaterial);
-            indent.position.y = Math.cos(angle) * wireBarrelRadius;
-            indent.position.z = Math.sin(angle) * wireBarrelRadius;
-            wireBarrel.add(indent);
-        }
-
-        contactGroup.add(wireBarrel);
-
-        // Inspection hole (to verify conductor presence)
-        const inspectionHoleGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.55, 16);
-        const inspectionHole = new THREE.Mesh(inspectionHoleGeometry, copperStrandMaterial);
-        inspectionHole.position.y = 0;
-        inspectionHole.position.z = 0.35;
-        wireBarrel.add(inspectionHole);
-
-        // Insulation support barrel
-        const insulationSupportLength = 1.3;
-        const insulationSupportRadius = 0.55;
+        // INSULATION SUPPORT CRIMP (rear section - crimps on wire jacket)
+        const insulationSupportLength = 2.2;
+        const insulationSupportRadius = 0.75;
         const insulationSupportGeometry = new THREE.CylinderGeometry(
             insulationSupportRadius, insulationSupportRadius, insulationSupportLength, 8
         );
         const insulationSupport = new THREE.Mesh(insulationSupportGeometry, silverCrimpMaterial);
         insulationSupport.rotation.z = Math.PI / 2;
-        insulationSupport.position.x = -0.8;
+        insulationSupport.position.x = 9.1;
         insulationSupport.castShadow = true;
 
-        // Insulation support crimp indents
+        // 4 crimp indents on insulation support
+        const indentGeometry = new THREE.BoxGeometry(0.12, 1.3, 0.08);
         for (let i = 0; i < 4; i++) {
             const angle = (i / 4) * Math.PI * 2;
-            const indent = new THREE.Mesh(indentGeometry, indentMaterial);
+            const indent = new THREE.Mesh(indentGeometry, crimpIndentMaterial);
             indent.position.y = Math.cos(angle) * insulationSupportRadius;
             indent.position.z = Math.sin(angle) * insulationSupportRadius;
             insulationSupport.add(indent);
@@ -503,35 +468,91 @@
 
         contactGroup.add(insulationSupport);
 
-        // Contact transition area
-        const transitionGeometry = new THREE.CylinderGeometry(0.45, 0.3, 0.8, 16);
+        // WIRE BARREL CRIMP (conductor crimp section)
+        const wireBarrelLength = 2.8;
+        const wireBarrelRadius = 0.68;
+        const wireBarrelGeometry = new THREE.CylinderGeometry(
+            wireBarrelRadius, wireBarrelRadius, wireBarrelLength, 8
+        );
+        const wireBarrel = new THREE.Mesh(wireBarrelGeometry, silverCrimpMaterial);
+        wireBarrel.rotation.z = Math.PI / 2;
+        wireBarrel.position.x = 11.6;
+        wireBarrel.castShadow = true;
+
+        // 4 crimp indents on wire barrel
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            const indent = new THREE.Mesh(indentGeometry, crimpIndentMaterial);
+            indent.position.y = Math.cos(angle) * wireBarrelRadius;
+            indent.position.z = Math.sin(angle) * wireBarrelRadius;
+            wireBarrel.add(indent);
+        }
+
+        // Inspection hole in wire barrel
+        const inspectionHoleGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.7, 16);
+        const inspectionHole = new THREE.Mesh(inspectionHoleGeometry, copperMaterial);
+        inspectionHole.position.set(0, 0, 0.5);
+        wireBarrel.add(inspectionHole);
+
+        contactGroup.add(wireBarrel);
+
+        // TRANSITION TO CONTACT BODY
+        const transitionGeometry = new THREE.CylinderGeometry(0.55, 0.68, 0.6, 16);
         const transition = new THREE.Mesh(transitionGeometry, goldPlateMaterial);
         transition.rotation.z = Math.PI / 2;
-        transition.position.x = 1.7;
+        transition.position.x = 13.3;
         transition.castShadow = true;
         contactGroup.add(transition);
 
-        // Male pin contact body (gold plated)
-        const contactBodyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3.5, 16);
-        const contactBody = new THREE.Mesh(contactBodyGeometry, goldPlateMaterial);
-        contactBody.rotation.z = Math.PI / 2;
-        contactBody.position.x = 4;
-        contactBody.castShadow = true;
-        contactGroup.add(contactBody);
+        // RETENTION SHOULDER (locks into connector body)
+        const retentionShoulderLength = 1.2;
+        const retentionShoulderRadius = 0.55;
+        const retentionShoulder = new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                retentionShoulderRadius, retentionShoulderRadius, retentionShoulderLength, 16
+            ),
+            goldPlateMaterial
+        );
+        retentionShoulder.rotation.z = Math.PI / 2;
+        retentionShoulder.position.x = 14.2;
+        retentionShoulder.castShadow = true;
 
-        // Pin tip with chamfer
-        const pinTipGeometry = new THREE.CylinderGeometry(0.25, 0.3, 0.8, 16);
+        // Retention grooves
+        for (let i = 0; i < 2; i++) {
+            const grooveGeometry = new THREE.TorusGeometry(retentionShoulderRadius + 0.05, 0.08, 8, 16);
+            const groove = new THREE.Mesh(grooveGeometry, crimpIndentMaterial);
+            groove.rotation.y = Math.PI / 2;
+            groove.position.x = -0.3 + i * 0.6;
+            retentionShoulder.add(groove);
+        }
+
+        contactGroup.add(retentionShoulder);
+
+        // CONTACT PIN BODY (long thin section)
+        const pinBodyLength = 8.0; // Long thin pin typical of HD D-sub
+        const pinBodyRadius = 0.32; // Thin diameter
+        const pinBodyGeometry = new THREE.CylinderGeometry(
+            pinBodyRadius, pinBodyRadius, pinBodyLength, 20
+        );
+        const pinBody = new THREE.Mesh(pinBodyGeometry, goldPlateMaterial);
+        pinBody.rotation.z = Math.PI / 2;
+        pinBody.position.x = 18.9;
+        pinBody.castShadow = true;
+        contactGroup.add(pinBody);
+
+        // PIN TIP CHAMFER
+        const pinTipGeometry = new THREE.CylinderGeometry(0.25, pinBodyRadius, 0.6, 16);
         const pinTip = new THREE.Mesh(pinTipGeometry, goldPlateMaterial);
         pinTip.rotation.z = Math.PI / 2;
-        pinTip.position.x = 5.9;
+        pinTip.position.x = 23.2;
         pinTip.castShadow = true;
         contactGroup.add(pinTip);
 
-        // Pin point
-        const pinPointGeometry = new THREE.ConeGeometry(0.25, 0.6, 16);
+        // PIN POINT
+        const pinPointGeometry = new THREE.ConeGeometry(0.25, 0.5, 16);
         const pinPoint = new THREE.Mesh(pinPointGeometry, goldPlateMaterial);
         pinPoint.rotation.z = -Math.PI / 2;
-        pinPoint.position.x = 6.6;
+        pinPoint.position.x = 23.75;
         pinPoint.castShadow = true;
         contactGroup.add(pinPoint);
 
@@ -540,7 +561,7 @@
 
         // Ground plane with shadow
         const groundGeometry = new THREE.PlaneGeometry(100, 100);
-        const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.2 });
+        const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.15 });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = -8;
@@ -548,14 +569,14 @@
         scene.add(ground);
 
         // Grid helper
-        const gridHelper = new THREE.GridHelper(50, 50, 0xbbbbbb, 0xdddddd);
+        const gridHelper = new THREE.GridHelper(60, 60, 0xc0c0c0, 0xe0e0e0);
         gridHelper.position.y = -7.9;
         scene.add(gridHelper);
 
         // Interaction variables
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
-        let autoRotate = false;
+        let autoRotate = true; // Start with auto-rotate on
         let showCrossSection = false;
         let showLabels = false;
         let clipPlane = null;
@@ -590,7 +611,7 @@
             e.preventDefault();
             const zoomSpeed = 0.02;
             camera.position.multiplyScalar(1 + (e.deltaY > 0 ? zoomSpeed : -zoomSpeed));
-            camera.position.clampLength(10, 50);
+            camera.position.clampLength(8, 50);
 
             if (showLabels) {
                 updateLabels();
@@ -600,11 +621,12 @@
         // Label positioning
         function updateLabels() {
             const labels = [
-                { id: 'label-strip', position: new THREE.Vector3(0.5, 0, 0) },
-                { id: 'label-crimp', position: new THREE.Vector3(0.5, 0, 0.8) },
-                { id: 'label-insulation', position: new THREE.Vector3(-0.8, 0, 0.8) },
-                { id: 'label-contact', position: new THREE.Vector3(4, 0, 0.6) },
-                { id: 'label-inspection', position: new THREE.Vector3(0.5, 0, -0.8) }
+                { id: 'label-wire', position: new THREE.Vector3(-10, 0, 1.2) },
+                { id: 'label-strip', position: new THREE.Vector3(10.2, 0, 0.8) },
+                { id: 'label-crimp', position: new THREE.Vector3(11.6, 0, 1.2) },
+                { id: 'label-insulation', position: new THREE.Vector3(9.1, 0, 1.2) },
+                { id: 'label-retention', position: new THREE.Vector3(14.2, 0, 1.0) },
+                { id: 'label-pin', position: new THREE.Vector3(19, 0, 0.8) }
             ];
 
             labels.forEach(label => {
@@ -616,8 +638,13 @@
                 const y = (screenPos.y * -0.5 + 0.5) * window.innerHeight;
 
                 const labelEl = document.getElementById(label.id);
-                labelEl.style.left = x + 'px';
-                labelEl.style.top = y + 'px';
+                if (screenPos.z < 1) { // Only show if in front of camera
+                    labelEl.style.left = x + 'px';
+                    labelEl.style.top = y + 'px';
+                    labelEl.style.opacity = '1';
+                } else {
+                    labelEl.style.opacity = '0';
+                }
             });
         }
 
@@ -647,29 +674,34 @@
                 clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
                 renderer.clippingPlanes = [clipPlane];
 
-                wireInsulation.material = whiteInsulationMaterial.clone();
-                wireInsulation.material.clippingPlanes = [clipPlane];
-                wireInsulation.material.side = THREE.DoubleSide;
+                // Apply clipping to all major components
+                [wire, wireBarrel, insulationSupport, pinBody, retentionShoulder].forEach(mesh => {
+                    mesh.material = mesh.material.clone();
+                    mesh.material.clippingPlanes = [clipPlane];
+                    mesh.material.side = THREE.DoubleSide;
+                });
 
-                wireBarrel.material = silverCrimpMaterial.clone();
-                wireBarrel.material.clippingPlanes = [clipPlane];
-                wireBarrel.material.side = THREE.DoubleSide;
-
-                insulationSupport.material = silverCrimpMaterial.clone();
-                insulationSupport.material.clippingPlanes = [clipPlane];
-                insulationSupport.material.side = THREE.DoubleSide;
-
-                contactBody.material = goldPlateMaterial.clone();
-                contactBody.material.clippingPlanes = [clipPlane];
-                contactBody.material.side = THREE.DoubleSide;
+                strandGroup.children.forEach(strand => {
+                    strand.material = strand.material.clone();
+                    strand.material.clippingPlanes = [clipPlane];
+                    strand.material.side = THREE.DoubleSide;
+                });
 
                 this.textContent = 'Hide Cross-Section';
             } else {
                 renderer.clippingPlanes = [];
-                wireInsulation.material = whiteInsulationMaterial;
+
+                // Restore original materials
+                wire.material = whiteWireMaterial;
                 wireBarrel.material = silverCrimpMaterial;
                 insulationSupport.material = silverCrimpMaterial;
-                contactBody.material = goldPlateMaterial;
+                pinBody.material = goldPlateMaterial;
+                retentionShoulder.material = goldPlateMaterial;
+
+                strandGroup.children.forEach(strand => {
+                    strand.material = copperMaterial;
+                });
+
                 this.textContent = 'Cross-Section View';
             }
         });
@@ -682,7 +714,7 @@
 
         document.getElementById('reset-view').addEventListener('click', () => {
             contactAssembly.rotation.set(0, 0, 0);
-            camera.position.set(25, 15, 25);
+            camera.position.set(20, 12, 20);
             camera.lookAt(0, 0, 0);
 
             if (showLabels) {
@@ -695,8 +727,8 @@
             requestAnimationFrame(animate);
 
             if (autoRotate && !isDragging) {
-                contactAssembly.rotation.y += 0.005;
-                contactAssembly.rotation.x = Math.sin(Date.now() * 0.0005) * 0.1;
+                contactAssembly.rotation.y += 0.004;
+                contactAssembly.rotation.x = Math.sin(Date.now() * 0.0003) * 0.15 + 0.1;
 
                 if (showLabels) {
                     updateLabels();
@@ -717,6 +749,10 @@
                 updateLabels();
             }
         });
+
+        // Initialize auto-rotate button as active
+        document.getElementById('toggle-rotation').classList.add('active');
+        document.getElementById('toggle-rotation').textContent = 'Stop Rotation';
 
         // Start animation
         animate();
