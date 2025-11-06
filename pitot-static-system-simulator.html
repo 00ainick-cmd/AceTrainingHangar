@@ -27,7 +27,7 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             color: #fff;
             padding: 20px 25px;
             border-radius: 8px;
@@ -85,7 +85,7 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             padding: 20px 25px;
             border-radius: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
@@ -197,7 +197,7 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             color: #fff;
             padding: 15px 20px;
             border-radius: 8px;
@@ -342,7 +342,7 @@
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
         const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -363,17 +363,17 @@
         // Materials
         const blackCaseMaterial = new THREE.MeshStandardMaterial({
             color: 0x1a1a1a,
-            metalness: 0.3,
-            roughness: 0.7
+            metalness: 0.4,
+            roughness: 0.6
         });
 
         const glassMaterial = new THREE.MeshPhysicalMaterial({
             color: 0xffffff,
             metalness: 0.0,
-            roughness: 0.1,
+            roughness: 0.05,
             transparent: true,
-            opacity: 0.3,
-            transmission: 0.9,
+            opacity: 0.15,
+            transmission: 0.95,
             thickness: 0.5
         });
 
@@ -410,130 +410,556 @@
         let showInternal = false;
         let showPlumbing = true;
 
-        // Main instrument panel group
+        // Main groups
         const instrumentPanel = new THREE.Group();
         scene.add(instrumentPanel);
 
-        // Plumbing system group
         const plumbingSystem = new THREE.Group();
         scene.add(plumbingSystem);
 
-        // Internal mechanisms group
         const internalMechanisms = new THREE.Group();
         internalMechanisms.visible = false;
         scene.add(internalMechanisms);
 
-        // ===== CREATE STEAM GAUGES =====
-        const steamGauges = new THREE.Group();
+        // ===== CREATE REALISTIC AIRSPEED INDICATOR =====
+        function createAirspeedIndicator() {
+            const gauge = new THREE.Group();
 
-        // Function to create a basic steam gauge
-        function createSteamGauge(x, y, label) {
-            const gaugeGroup = new THREE.Group();
+            // Canvas for gauge face
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
 
-            // Case
-            const caseGeometry = new THREE.CylinderGeometry(2.5, 2.5, 1, 32);
-            const gaugeCase = new THREE.Mesh(caseGeometry, blackCaseMaterial);
-            gaugeCase.rotation.x = Math.PI / 2;
-            gaugeGroup.add(gaugeCase);
+            // Draw gauge face
+            const centerX = 512;
+            const centerY = 512;
+            const radius = 480;
 
-            // Glass front
-            const glassGeometry = new THREE.CylinderGeometry(2.3, 2.3, 0.1, 32);
-            const glass = new THREE.Mesh(glassGeometry, glassMaterial);
-            glass.rotation.x = Math.PI / 2;
-            glass.position.z = 0.55;
-            gaugeGroup.add(glass);
+            // White background
+            ctx.fillStyle = '#f8f8f8';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
 
-            // Face (white background)
-            const faceGeometry = new THREE.CircleGeometry(2.2, 32);
+            // Color arcs (from outside to inside)
+            // White arc (40-85 knots - flap range)
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 40;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 60,
+                Math.PI + (40/200) * 1.5 * Math.PI,
+                Math.PI + (85/200) * 1.5 * Math.PI);
+            ctx.stroke();
+
+            // Green arc (50-140 knots - normal range)
+            ctx.strokeStyle = '#00aa00';
+            ctx.lineWidth = 40;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 60,
+                Math.PI + (50/200) * 1.5 * Math.PI,
+                Math.PI + (140/200) * 1.5 * Math.PI);
+            ctx.stroke();
+
+            // Yellow arc (140-180 knots - caution)
+            ctx.strokeStyle = '#ffdd00';
+            ctx.lineWidth = 40;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 60,
+                Math.PI + (140/200) * 1.5 * Math.PI,
+                Math.PI + (180/200) * 1.5 * Math.PI);
+            ctx.stroke();
+
+            // Red line (180 knots - Vne)
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 12;
+            ctx.beginPath();
+            const vneAngle = Math.PI + (180/200) * 1.5 * Math.PI;
+            ctx.arc(centerX, centerY, radius - 60, vneAngle - 0.02, vneAngle + 0.02);
+            ctx.stroke();
+
+            // Draw tick marks and numbers
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Major ticks every 10 knots, numbers every 20
+            for (let speed = 0; speed <= 200; speed += 10) {
+                const angle = Math.PI + (speed / 200) * 1.5 * Math.PI;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+
+                if (speed % 20 === 0) {
+                    // Major tick
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + cos * (radius - 120), centerY + sin * (radius - 120));
+                    ctx.lineTo(centerX + cos * (radius - 80), centerY + sin * (radius - 80));
+                    ctx.stroke();
+
+                    // Number
+                    ctx.fillText(speed.toString(),
+                        centerX + cos * (radius - 160),
+                        centerY + sin * (radius - 160));
+                } else {
+                    // Minor tick
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + cos * (radius - 100), centerY + sin * (radius - 100));
+                    ctx.lineTo(centerX + cos * (radius - 80), centerY + sin * (radius - 80));
+                    ctx.stroke();
+                }
+            }
+
+            // "AIRSPEED" label
+            ctx.font = 'bold 40px Arial';
+            ctx.fillText('AIRSPEED', centerX, centerY - 180);
+
+            // "KNOTS" label
+            ctx.font = '32px Arial';
+            ctx.fillText('KNOTS', centerX, centerY + 200);
+
+            // Create texture
+            const texture = new THREE.CanvasTexture(canvas);
             const faceMaterial = new THREE.MeshStandardMaterial({
-                color: 0xf5f5f5,
+                map: texture,
                 metalness: 0.0,
                 roughness: 0.8
             });
+
+            // Gauge case
+            const caseGeometry = new THREE.CylinderGeometry(2.8, 2.8, 1.2, 64);
+            const gaugeCase = new THREE.Mesh(caseGeometry, blackCaseMaterial);
+            gaugeCase.rotation.x = Math.PI / 2;
+            gaugeCase.castShadow = true;
+            gauge.add(gaugeCase);
+
+            // Bezel (metal ring)
+            const bezelGeometry = new THREE.TorusGeometry(2.7, 0.15, 16, 64);
+            const bezel = new THREE.Mesh(bezelGeometry, metalMaterial);
+            bezel.position.z = 0.6;
+            gauge.add(bezel);
+
+            // Glass
+            const glassGeometry = new THREE.CylinderGeometry(2.55, 2.55, 0.15, 64);
+            const glass = new THREE.Mesh(glassGeometry, glassMaterial);
+            glass.rotation.x = Math.PI / 2;
+            glass.position.z = 0.68;
+            glass.castShadow = true;
+            gauge.add(glass);
+
+            // Gauge face
+            const faceGeometry = new THREE.CircleGeometry(2.5, 64);
             const face = new THREE.Mesh(faceGeometry, faceMaterial);
-            face.position.z = 0.45;
-            gaugeGroup.add(face);
+            face.position.z = 0.55;
+            gauge.add(face);
 
             // Center hub
-            const hubGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.2, 16);
+            const hubGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.15, 32);
             const hub = new THREE.Mesh(hubGeometry, metalMaterial);
             hub.rotation.x = Math.PI / 2;
-            hub.position.z = 0.5;
-            gaugeGroup.add(hub);
+            hub.position.z = 0.63;
+            gauge.add(hub);
 
-            // Mounting screws (4 corners)
-            const screwGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.15, 8);
-            const screwPositions = [
-                { x: 2.0, y: 2.0 },
-                { x: -2.0, y: 2.0 },
-                { x: 2.0, y: -2.0 },
-                { x: -2.0, y: -2.0 }
-            ];
-            screwPositions.forEach(pos => {
-                const screw = new THREE.Mesh(screwGeometry, metalMaterial);
-                screw.rotation.x = Math.PI / 2;
-                screw.position.set(pos.x, pos.y, 0.58);
-                gaugeGroup.add(screw);
+            // Needle (realistic shape)
+            const needleShape = new THREE.Shape();
+            needleShape.moveTo(0, 0);
+            needleShape.lineTo(0.06, -0.2);
+            needleShape.lineTo(0.08, -1.8);
+            needleShape.lineTo(0, -1.9);
+            needleShape.lineTo(-0.08, -1.8);
+            needleShape.lineTo(-0.06, -0.2);
+            needleShape.closePath();
+
+            const needleGeometry = new THREE.ShapeGeometry(needleShape);
+            const needleMaterial = new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                metalness: 0.3,
+                roughness: 0.5
             });
+            const needle = new THREE.Mesh(needleGeometry, needleMaterial);
+            needle.position.z = 0.62;
+            needle.rotation.z = Math.PI; // Point at zero
+            gauge.add(needle);
+            gauge.userData.needle = needle;
+            gauge.userData.canvas = canvas;
 
-            gaugeGroup.position.set(x, y, 0);
-            return gaugeGroup;
+            return gauge;
         }
 
-        // Create three steam gauges
-        const airspeedGauge = createSteamGauge(-7, 2, "ASI");
-        const altimeterGauge = createSteamGauge(0, 2, "ALT");
-        const vsiGauge = createSteamGauge(7, 2, "VSI");
+        // ===== CREATE REALISTIC ALTIMETER =====
+        function createAltimeter() {
+            const gauge = new THREE.Group();
 
+            // Canvas for gauge face
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            const centerX = 512;
+            const centerY = 512;
+            const radius = 480;
+
+            // White background
+            ctx.fillStyle = '#f8f8f8';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw striped pattern (hundreds)
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 100; i++) {
+                const angle = (i / 100) * Math.PI * 2 - Math.PI / 2;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+
+                if (i % 10 === 0) {
+                    // Long tick for thousands
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + cos * (radius - 100), centerY + sin * (radius - 100));
+                    ctx.lineTo(centerX + cos * (radius - 60), centerY + sin * (radius - 60));
+                    ctx.stroke();
+                } else if (i % 5 === 0) {
+                    // Medium tick
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + cos * (radius - 80), centerY + sin * (radius - 80));
+                    ctx.lineTo(centerX + cos * (radius - 60), centerY + sin * (radius - 60));
+                    ctx.stroke();
+                } else {
+                    // Short tick
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + cos * (radius - 70), centerY + sin * (radius - 70));
+                    ctx.lineTo(centerX + cos * (radius - 60), centerY + sin * (radius - 60));
+                    ctx.stroke();
+                }
+            }
+
+            // Numbers (0-9 for thousands)
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i < 10; i++) {
+                const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                ctx.fillText(i.toString(),
+                    centerX + cos * (radius - 140),
+                    centerY + sin * (radius - 140));
+            }
+
+            // "ALTIMETER" label
+            ctx.font = 'bold 36px Arial';
+            ctx.fillText('ALTIMETER', centerX, centerY - 100);
+
+            // "FT × 100" label
+            ctx.font = '28px Arial';
+            ctx.fillText('FT × 100', centerX, centerY + 160);
+
+            // Kollsman window background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(centerX - 90, centerY + 210, 180, 60);
+
+            // Create texture
+            const texture = new THREE.CanvasTexture(canvas);
+            const faceMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                metalness: 0.0,
+                roughness: 0.8
+            });
+
+            // Gauge case
+            const caseGeometry = new THREE.CylinderGeometry(2.8, 2.8, 1.2, 64);
+            const gaugeCase = new THREE.Mesh(caseGeometry, blackCaseMaterial);
+            gaugeCase.rotation.x = Math.PI / 2;
+            gaugeCase.castShadow = true;
+            gauge.add(gaugeCase);
+
+            // Bezel
+            const bezelGeometry = new THREE.TorusGeometry(2.7, 0.15, 16, 64);
+            const bezel = new THREE.Mesh(bezelGeometry, metalMaterial);
+            bezel.position.z = 0.6;
+            gauge.add(bezel);
+
+            // Glass
+            const glassGeometry = new THREE.CylinderGeometry(2.55, 2.55, 0.15, 64);
+            const glass = new THREE.Mesh(glassGeometry, glassMaterial);
+            glass.rotation.x = Math.PI / 2;
+            glass.position.z = 0.68;
+            glass.castShadow = true;
+            gauge.add(glass);
+
+            // Gauge face
+            const faceGeometry = new THREE.CircleGeometry(2.5, 64);
+            const face = new THREE.Mesh(faceGeometry, faceMaterial);
+            face.position.z = 0.55;
+            gauge.add(face);
+            gauge.userData.face = face;
+            gauge.userData.faceMaterial = faceMaterial;
+            gauge.userData.faceCanvas = canvas;
+
+            // Center hub
+            const hubGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.18, 32);
+            const hub = new THREE.Mesh(hubGeometry, metalMaterial);
+            hub.rotation.x = Math.PI / 2;
+            hub.position.z = 0.64;
+            gauge.add(hub);
+
+            // 100ft needle (long, thin, black)
+            const needle100Shape = new THREE.Shape();
+            needle100Shape.moveTo(0, 0);
+            needle100Shape.lineTo(0.04, -0.15);
+            needle100Shape.lineTo(0.05, -2.0);
+            needle100Shape.lineTo(0, -2.05);
+            needle100Shape.lineTo(-0.05, -2.0);
+            needle100Shape.lineTo(-0.04, -0.15);
+            needle100Shape.closePath();
+
+            const needle100Geometry = new THREE.ShapeGeometry(needle100Shape);
+            const needle100 = new THREE.Mesh(needle100Geometry, new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                metalness: 0.3,
+                roughness: 0.5
+            }));
+            needle100.position.z = 0.63;
+            needle100.rotation.z = Math.PI / 2;
+            gauge.add(needle100);
+            gauge.userData.needle100 = needle100;
+
+            // 1000ft needle (medium, wider)
+            const needle1000Shape = new THREE.Shape();
+            needle1000Shape.moveTo(0, 0.3);
+            needle1000Shape.lineTo(0.08, 0.15);
+            needle1000Shape.lineTo(0.08, -1.5);
+            needle1000Shape.lineTo(0, -1.6);
+            needle1000Shape.lineTo(-0.08, -1.5);
+            needle1000Shape.lineTo(-0.08, 0.15);
+            needle1000Shape.closePath();
+
+            const needle1000Geometry = new THREE.ShapeGeometry(needle1000Shape);
+            const needle1000 = new THREE.Mesh(needle1000Geometry, new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                metalness: 0.3,
+                roughness: 0.5
+            }));
+            needle1000.position.z = 0.62;
+            needle1000.rotation.z = Math.PI / 2;
+            gauge.add(needle1000);
+            gauge.userData.needle1000 = needle1000;
+
+            // 10000ft needle (short, triangular, striped)
+            const needle10000Shape = new THREE.Shape();
+            needle10000Shape.moveTo(0, -1.0);
+            needle10000Shape.lineTo(0.15, -0.3);
+            needle10000Shape.lineTo(0.15, 0.3);
+            needle10000Shape.lineTo(0, 0.4);
+            needle10000Shape.lineTo(-0.15, 0.3);
+            needle10000Shape.lineTo(-0.15, -0.3);
+            needle10000Shape.closePath();
+
+            const needle10000Geometry = new THREE.ShapeGeometry(needle10000Shape);
+            const needle10000 = new THREE.Mesh(needle10000Geometry, new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.2,
+                roughness: 0.6,
+                side: THREE.DoubleSide
+            }));
+            needle10000.position.z = 0.61;
+            needle10000.rotation.z = Math.PI / 2;
+            gauge.add(needle10000);
+            gauge.userData.needle10000 = needle10000;
+
+            // Striped pattern on 10000ft needle
+            const stripeGeometry = new THREE.PlaneGeometry(0.08, 0.8);
+            const stripeStripe = new THREE.Mesh(stripeGeometry, new THREE.MeshStandardMaterial({
+                color: 0xff0000,
+                side: THREE.DoubleSide
+            }));
+            stripeStripe.position.set(0, -0.3, 0.005);
+            needle10000.add(stripeStripe);
+
+            return gauge;
+        }
+
+        // ===== CREATE REALISTIC VSI =====
+        function createVSI() {
+            const gauge = new THREE.Group();
+
+            // Canvas for gauge face
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            const centerX = 512;
+            const centerY = 512;
+            const radius = 480;
+
+            // White background
+            ctx.fillStyle = '#f8f8f8';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw scale - VSI is ±2000 fpm
+            // 0 at 9 o'clock, UP clockwise, DOWN counter-clockwise
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // UP scale (0, 5, 10, 15, 20) x 100 fpm
+            const upValues = [0, 5, 10, 15, 20];
+            for (let i = 0; i < upValues.length; i++) {
+                const angle = Math.PI + (i / 4) * (3 * Math.PI / 4); // 0 to 135 degrees
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+
+                // Tick mark
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(centerX + cos * (radius - 100), centerY + sin * (radius - 100));
+                ctx.lineTo(centerX + cos * (radius - 70), centerY + sin * (radius - 70));
+                ctx.stroke();
+
+                // Number
+                if (upValues[i] > 0) {
+                    ctx.fillText(upValues[i].toString(),
+                        centerX + cos * (radius - 150),
+                        centerY + sin * (radius - 150));
+                }
+            }
+
+            // DOWN scale (0, 5, 10, 15, 20) x 100 fpm
+            const downValues = [0, 5, 10, 15, 20];
+            for (let i = 0; i < downValues.length; i++) {
+                const angle = Math.PI - (i / 4) * (3 * Math.PI / 4); // 0 to -135 degrees
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+
+                if (i === 0) continue; // Skip duplicate 0
+
+                // Tick mark
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(centerX + cos * (radius - 100), centerY + sin * (radius - 100));
+                ctx.lineTo(centerX + cos * (radius - 70), centerY + sin * (radius - 70));
+                ctx.stroke();
+
+                // Number
+                ctx.fillText(downValues[i].toString(),
+                    centerX + cos * (radius - 150),
+                    centerY + sin * (radius - 150));
+            }
+
+            // Zero at center left
+            ctx.font = 'bold 56px Arial';
+            ctx.fillText('0', centerX - (radius - 150), centerY);
+
+            // "UP" label
+            ctx.font = 'bold 32px Arial';
+            ctx.fillText('UP', centerX, centerY - 220);
+
+            // "DOWN" label
+            ctx.fillText('DOWN', centerX, centerY + 220);
+
+            // "VERTICAL SPEED" label
+            ctx.font = 'bold 32px Arial';
+            ctx.fillText('VERTICAL', centerX, centerY - 60);
+            ctx.fillText('SPEED', centerX, centerY - 20);
+
+            // "100 FEET PER MIN" label
+            ctx.font = '22px Arial';
+            ctx.fillText('100 FEET PER MIN', centerX, centerY + 60);
+
+            // Create texture
+            const texture = new THREE.CanvasTexture(canvas);
+            const faceMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                metalness: 0.0,
+                roughness: 0.8
+            });
+
+            // Gauge case
+            const caseGeometry = new THREE.CylinderGeometry(2.8, 2.8, 1.2, 64);
+            const gaugeCase = new THREE.Mesh(caseGeometry, blackCaseMaterial);
+            gaugeCase.rotation.x = Math.PI / 2;
+            gaugeCase.castShadow = true;
+            gauge.add(gaugeCase);
+
+            // Bezel
+            const bezelGeometry = new THREE.TorusGeometry(2.7, 0.15, 16, 64);
+            const bezel = new THREE.Mesh(bezelGeometry, metalMaterial);
+            bezel.position.z = 0.6;
+            gauge.add(bezel);
+
+            // Glass
+            const glassGeometry = new THREE.CylinderGeometry(2.55, 2.55, 0.15, 64);
+            const glass = new THREE.Mesh(glassGeometry, glassMaterial);
+            glass.rotation.x = Math.PI / 2;
+            glass.position.z = 0.68;
+            glass.castShadow = true;
+            gauge.add(glass);
+
+            // Gauge face
+            const faceGeometry = new THREE.CircleGeometry(2.5, 64);
+            const face = new THREE.Mesh(faceGeometry, faceMaterial);
+            face.position.z = 0.55;
+            gauge.add(face);
+
+            // Center hub
+            const hubGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.15, 32);
+            const hub = new THREE.Mesh(hubGeometry, metalMaterial);
+            hub.rotation.x = Math.PI / 2;
+            hub.position.z = 0.63;
+            gauge.add(hub);
+
+            // Needle (triangular pointer)
+            const needleShape = new THREE.Shape();
+            needleShape.moveTo(0, 0);
+            needleShape.lineTo(0.1, -0.25);
+            needleShape.lineTo(0.06, -1.9);
+            needleShape.lineTo(0, -2.0);
+            needleShape.lineTo(-0.06, -1.9);
+            needleShape.lineTo(-0.1, -0.25);
+            needleShape.closePath();
+
+            const needleGeometry = new THREE.ShapeGeometry(needleShape);
+            const needle = new THREE.Mesh(needleGeometry, new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                metalness: 0.3,
+                roughness: 0.5
+            }));
+            needle.position.z = 0.62;
+            needle.rotation.z = Math.PI; // Point at zero
+            gauge.add(needle);
+            gauge.userData.needle = needle;
+
+            return gauge;
+        }
+
+        // Create all three gauges
+        const steamGauges = new THREE.Group();
+        const airspeedGauge = createAirspeedIndicator();
+        airspeedGauge.position.set(-7.5, 2, 0);
         steamGauges.add(airspeedGauge);
+
+        const altimeterGauge = createAltimeter();
+        altimeterGauge.position.set(0, 2, 0);
         steamGauges.add(altimeterGauge);
+
+        const vsiGauge = createVSI();
+        vsiGauge.position.set(7.5, 2, 0);
         steamGauges.add(vsiGauge);
-
-        // Add gauge needles
-        const needleMaterial = new THREE.MeshStandardMaterial({
-            color: 0x000000,
-            metalness: 0.3,
-            roughness: 0.5
-        });
-
-        // ASI needle
-        const asiNeedleGeometry = new THREE.BoxGeometry(0.08, 1.8, 0.02);
-        const asiNeedle = new THREE.Mesh(asiNeedleGeometry, needleMaterial);
-        asiNeedle.position.set(0, 0.9, 0.52);
-        airspeedGauge.add(asiNeedle);
-        airspeedGauge.userData.needle = asiNeedle;
-
-        // Altimeter needles (3 hands: 100ft, 1000ft, 10000ft)
-        const alt100Needle = new THREE.Mesh(
-            new THREE.BoxGeometry(0.06, 1.5, 0.02),
-            needleMaterial
-        );
-        alt100Needle.position.set(0, 0.75, 0.52);
-        altimeterGauge.add(alt100Needle);
-        altimeterGauge.userData.needle100 = alt100Needle;
-
-        const alt1000Needle = new THREE.Mesh(
-            new THREE.BoxGeometry(0.08, 1.2, 0.02),
-            new THREE.MeshStandardMaterial({ color: 0x333333 })
-        );
-        alt1000Needle.position.set(0, 0.6, 0.53);
-        altimeterGauge.add(alt1000Needle);
-        altimeterGauge.userData.needle1000 = alt1000Needle;
-
-        const alt10000Needle = new THREE.Mesh(
-            new THREE.BoxGeometry(0.1, 0.8, 0.02),
-            new THREE.MeshStandardMaterial({ color: 0xffffff })
-        );
-        alt10000Needle.position.set(0, 0.4, 0.54);
-        altimeterGauge.add(alt10000Needle);
-        altimeterGauge.userData.needle10000 = alt10000Needle;
-
-        // VSI needle
-        const vsiNeedleGeometry = new THREE.BoxGeometry(0.08, 1.6, 0.02);
-        const vsiNeedle = new THREE.Mesh(vsiNeedleGeometry, needleMaterial);
-        vsiNeedle.position.set(0, 0.8, 0.52);
-        vsiGauge.add(vsiNeedle);
-        vsiGauge.userData.needle = vsiNeedle;
 
         instrumentPanel.add(steamGauges);
 
@@ -541,111 +967,93 @@
         const g5Display = new THREE.Group();
         g5Display.visible = false;
 
-        // G5 case (rounded rectangle)
         const g5CaseGeometry = new THREE.BoxGeometry(6, 6, 1);
         const g5Case = new THREE.Mesh(g5CaseGeometry, blackCaseMaterial);
         g5Display.add(g5Case);
 
-        // G5 screen
         const g5ScreenGeometry = new THREE.PlaneGeometry(5.5, 5.5);
-        const g5ScreenMaterial = new THREE.MeshBasicMaterial({
-            color: 0x0a0a0a
-        });
+        const g5ScreenMaterial = new THREE.MeshBasicMaterial({ color: 0x0a0a0a });
         const g5Screen = new THREE.Mesh(g5ScreenGeometry, g5ScreenMaterial);
         g5Screen.position.z = 0.51;
         g5Display.add(g5Screen);
 
-        // Create G5 display elements using canvas texture
-        const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 512;
-        const ctx = canvas.getContext('2d');
+        const g5Canvas = document.createElement('canvas');
+        g5Canvas.width = 512;
+        g5Canvas.height = 512;
+        const g5Ctx = g5Canvas.getContext('2d');
 
         function updateG5Display() {
-            // Clear canvas
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 512, 512);
+            g5Ctx.fillStyle = '#000000';
+            g5Ctx.fillRect(0, 0, 512, 512);
 
-            // Draw artificial horizon
-            ctx.fillStyle = '#0066cc';
-            ctx.fillRect(0, 256, 512, 256);
-            ctx.fillStyle = '#8b4513';
-            ctx.fillRect(0, 0, 512, 256);
+            // Artificial horizon
+            g5Ctx.fillStyle = '#0066cc';
+            g5Ctx.fillRect(0, 256, 512, 256);
+            g5Ctx.fillStyle = '#8b4513';
+            g5Ctx.fillRect(0, 0, 512, 256);
 
-            // Draw airspeed tape (left side)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(10, 100, 80, 312);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 24px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(Math.round(airspeed), 50, 270);
+            // Airspeed tape
+            g5Ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            g5Ctx.fillRect(10, 100, 80, 312);
+            g5Ctx.fillStyle = '#ffffff';
+            g5Ctx.font = 'bold 28px Arial';
+            g5Ctx.textAlign = 'center';
+            g5Ctx.fillText(Math.round(airspeed), 50, 270);
 
-            // Draw altitude tape (right side)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(422, 100, 80, 312);
-            ctx.fillStyle = '#00ff00';
-            ctx.font = 'bold 24px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(Math.round(altitude), 462, 270);
+            // Altitude tape
+            g5Ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            g5Ctx.fillRect(422, 100, 80, 312);
+            g5Ctx.fillStyle = '#00ff00';
+            g5Ctx.font = 'bold 28px Arial';
+            g5Ctx.fillText(Math.round(altitude), 462, 270);
 
-            // Draw VSI indicator (bottom right)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(380, 420, 120, 80);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 18px Arial';
-            ctx.textAlign = 'center';
+            // VSI
+            g5Ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            g5Ctx.fillRect(380, 420, 120, 80);
+            g5Ctx.fillStyle = '#ffffff';
+            g5Ctx.font = 'bold 20px Arial';
             const vsiSign = verticalSpeed >= 0 ? '+' : '';
-            ctx.fillText(vsiSign + Math.round(verticalSpeed), 440, 465);
+            g5Ctx.fillText(vsiSign + Math.round(verticalSpeed), 440, 465);
 
-            // Update texture
             g5Texture.needsUpdate = true;
         }
 
-        const g5Texture = new THREE.CanvasTexture(canvas);
-        const g5DisplayMaterial = new THREE.MeshBasicMaterial({
-            map: g5Texture
-        });
-        const g5DisplayMesh = new THREE.Mesh(
-            new THREE.PlaneGeometry(5.5, 5.5),
-            g5DisplayMaterial
-        );
+        const g5Texture = new THREE.CanvasTexture(g5Canvas);
+        const g5DisplayMaterial = new THREE.MeshBasicMaterial({ map: g5Texture });
+        const g5DisplayMesh = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 5.5), g5DisplayMaterial);
         g5DisplayMesh.position.z = 0.52;
         g5Display.add(g5DisplayMesh);
 
         g5Display.position.set(0, 2, 0);
         instrumentPanel.add(g5Display);
 
-        // ===== CREATE PITOT TUBE =====
+        // ===== PITOT TUBE =====
         const pitotTube = new THREE.Group();
-
-        // Pitot tube body
         const pitotBodyGeometry = new THREE.CylinderGeometry(0.2, 0.2, 4, 16);
         const pitotBody = new THREE.Mesh(pitotBodyGeometry, metalMaterial);
         pitotBody.rotation.z = Math.PI / 2;
+        pitotBody.castShadow = true;
         pitotTube.add(pitotBody);
 
-        // Pitot tube tip (tapered)
         const pitotTipGeometry = new THREE.ConeGeometry(0.2, 0.6, 16);
         const pitotTip = new THREE.Mesh(pitotTipGeometry, metalMaterial);
         pitotTip.rotation.z = -Math.PI / 2;
         pitotTip.position.x = 2.3;
+        pitotTip.castShadow = true;
         pitotTube.add(pitotTip);
 
-        // Pitot opening
         const pitotOpeningGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.3, 16);
         const pitotOpening = new THREE.Mesh(pitotOpeningGeometry, new THREE.MeshStandardMaterial({ color: 0x000000 }));
         pitotOpening.rotation.z = Math.PI / 2;
         pitotOpening.position.x = 2.5;
         pitotTube.add(pitotOpening);
 
-        // Heating element indicator (red band)
         const heaterGeometry = new THREE.CylinderGeometry(0.22, 0.22, 0.8, 16);
-        const heater = new THREE.Mesh(heaterGeometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }));
+        const heater = new THREE.Mesh(heaterGeometry, new THREE.MeshStandardMaterial({ color: 0xff3333 }));
         heater.rotation.z = Math.PI / 2;
         heater.position.x = 0.5;
         pitotTube.add(heater);
 
-        // Drain hole
         const drainGeometry = new THREE.SphereGeometry(0.05, 8, 8);
         const drain = new THREE.Mesh(drainGeometry, new THREE.MeshStandardMaterial({ color: 0x000000 }));
         drain.position.set(-1.5, -0.21, 0);
@@ -654,14 +1062,14 @@
         pitotTube.position.set(-12, -2, 0);
         plumbingSystem.add(pitotTube);
 
-        // ===== CREATE STATIC PORTS =====
+        // ===== STATIC PORTS =====
         const staticPort1 = new THREE.Group();
-        const portGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.3, 16);
-        const port1 = new THREE.Mesh(portGeometry, brassMaterial);
+        const port1Geometry = new THREE.CylinderGeometry(0.25, 0.25, 0.3, 16);
+        const port1 = new THREE.Mesh(port1Geometry, brassMaterial);
         port1.rotation.z = Math.PI / 2;
+        port1.castShadow = true;
         staticPort1.add(port1);
 
-        // Port holes (3 small holes)
         for (let i = 0; i < 3; i++) {
             const holeGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.35, 8);
             const hole = new THREE.Mesh(holeGeometry, new THREE.MeshStandardMaterial({ color: 0x000000 }));
@@ -673,86 +1081,66 @@
         staticPort1.position.set(-12, 2, -3);
         plumbingSystem.add(staticPort1);
 
-        // Static port 2 (opposite side)
         const staticPort2 = staticPort1.clone();
         staticPort2.position.set(-12, 2, 3);
         plumbingSystem.add(staticPort2);
 
-        // ===== CREATE PLUMBING LINES =====
+        // ===== PLUMBING LINES =====
         function createTubeLine(start, end, material) {
             const curve = new THREE.CatmullRomCurve3([
                 new THREE.Vector3(start.x, start.y, start.z),
                 new THREE.Vector3((start.x + end.x) / 2, (start.y + end.y) / 2, start.z),
                 new THREE.Vector3(end.x, end.y, end.z)
             ]);
-
-            const tubeGeometry = new THREE.TubeGeometry(curve, 20, 0.1, 8, false);
+            const tubeGeometry = new THREE.TubeGeometry(curve, 20, 0.12, 8, false);
             const tube = new THREE.Mesh(tubeGeometry, material);
+            tube.castShadow = true;
             return tube;
         }
 
-        // Pitot line (red) from pitot tube to ASI
-        const pitotLine = createTubeLine(
-            { x: -10, y: -2, z: 0 },
-            { x: -7, y: 0, z: 0 },
-            redTubeMaterial
-        );
+        const pitotLine = createTubeLine({ x: -10, y: -2, z: 0 }, { x: -7.5, y: 0, z: 0 }, redTubeMaterial);
         plumbingSystem.add(pitotLine);
 
-        // Static lines (blue) from static ports to instruments
-        const staticLine1 = createTubeLine(
-            { x: -12, y: 2, z: -3 },
-            { x: -7, y: 0, z: -0.5 },
-            blueTubeMaterial
-        );
+        const staticLine1 = createTubeLine({ x: -12, y: 2, z: -3 }, { x: -7.5, y: 0, z: -0.5 }, blueTubeMaterial);
         plumbingSystem.add(staticLine1);
 
-        const staticLine2 = createTubeLine(
-            { x: -7, y: 0, z: -0.5 },
-            { x: 0, y: 0, z: -0.5 },
-            blueTubeMaterial
-        );
+        const staticLine2 = createTubeLine({ x: -7.5, y: 0, z: -0.5 }, { x: 0, y: 0, z: -0.5 }, blueTubeMaterial);
         plumbingSystem.add(staticLine2);
 
-        const staticLine3 = createTubeLine(
-            { x: 0, y: 0, z: -0.5 },
-            { x: 7, y: 0, z: -0.5 },
-            blueTubeMaterial
-        );
+        const staticLine3 = createTubeLine({ x: 0, y: 0, z: -0.5 }, { x: 7.5, y: 0, z: -0.5 }, blueTubeMaterial);
         plumbingSystem.add(staticLine3);
 
-        // ===== CREATE INTERNAL MECHANISMS (ANEROIDS) =====
-
-        // ASI aneroid capsule
-        const asiAneroid = new THREE.Group();
+        // ===== INTERNAL MECHANISMS (ANEROIDS) =====
         const capsuleGeometry = new THREE.SphereGeometry(0.5, 16, 8);
-        capsuleGeometry.scale(1, 1, 0.3); // Flatten to wafer shape
+        capsuleGeometry.scale(1, 1, 0.3);
         const capsuleMaterial = new THREE.MeshStandardMaterial({
             color: 0xcccccc,
             metalness: 0.6,
             roughness: 0.4
         });
 
-        // Create bellows effect (stacked wafers)
+        // ASI aneroid
+        const asiAneroid = new THREE.Group();
         for (let i = 0; i < 5; i++) {
             const wafer = new THREE.Mesh(capsuleGeometry, capsuleMaterial);
             wafer.position.y = i * 0.15;
             wafer.scale.set(1 - i * 0.05, 1 - i * 0.05, 1);
+            wafer.castShadow = true;
             asiAneroid.add(wafer);
         }
-
-        asiAneroid.position.set(-7, 2, 0);
+        asiAneroid.position.set(-7.5, 2, 0);
         asiAneroid.scale.set(0.8, 0.8, 0.8);
         internalMechanisms.add(asiAneroid);
         airspeedGauge.userData.aneroid = asiAneroid;
 
-        // Altimeter aneroid stack (multiple capsules)
+        // Altimeter aneroid
         const altAneroid = new THREE.Group();
         for (let stack = 0; stack < 3; stack++) {
             for (let i = 0; i < 4; i++) {
                 const wafer = new THREE.Mesh(capsuleGeometry, capsuleMaterial);
                 wafer.position.set(stack * 0.6 - 0.6, i * 0.12, 0);
                 wafer.scale.set(0.7 - i * 0.03, 0.7 - i * 0.03, 1);
+                wafer.castShadow = true;
                 altAneroid.add(wafer);
             }
         }
@@ -761,29 +1149,46 @@
         internalMechanisms.add(altAneroid);
         altimeterGauge.userData.aneroid = altAneroid;
 
-        // VSI capsule (single with calibrated leak)
+        // VSI aneroid
         const vsiAneroid = new THREE.Group();
         for (let i = 0; i < 4; i++) {
             const wafer = new THREE.Mesh(capsuleGeometry, capsuleMaterial);
             wafer.position.y = i * 0.14;
             wafer.scale.set(0.9 - i * 0.05, 0.9 - i * 0.05, 1);
+            wafer.castShadow = true;
             vsiAneroid.add(wafer);
         }
-
-        // Calibrated leak (tiny tube)
         const leakGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.6, 8);
         const leak = new THREE.Mesh(leakGeometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }));
         leak.position.set(0.5, 0.3, 0);
         leak.rotation.z = Math.PI / 4;
         vsiAneroid.add(leak);
-
-        vsiAneroid.position.set(7, 2, 0);
+        vsiAneroid.position.set(7.5, 2, 0);
         vsiAneroid.scale.set(0.8, 0.8, 0.8);
         internalMechanisms.add(vsiAneroid);
         vsiGauge.userData.aneroid = vsiAneroid;
 
-        // ===== CONTROL HANDLERS =====
+        // ===== UPDATE KOLLSMAN WINDOW =====
+        function updateKollsmanWindow() {
+            const ctx = altimeterGauge.userData.faceCanvas.getContext('2d');
+            const centerX = 512;
+            const centerY = 512;
 
+            // Clear Kollsman area
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(centerX - 90, centerY + 210, 180, 60);
+
+            // Draw barometric pressure
+            ctx.fillStyle = '#00ff00';
+            ctx.font = 'bold 40px "Courier New"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(baroSetting.toFixed(2), centerX, centerY + 240);
+
+            altimeterGauge.userData.faceMaterial.map.needsUpdate = true;
+        }
+
+        // ===== CONTROL HANDLERS =====
         document.getElementById('airspeed-slider').addEventListener('input', (e) => {
             airspeed = parseFloat(e.target.value);
             document.getElementById('airspeed-value').textContent = airspeed + ' kts';
@@ -809,6 +1214,7 @@
             baroSetting = parseFloat(e.target.value) / 100;
             document.getElementById('baro-value').textContent = baroSetting.toFixed(2);
             document.getElementById('baro-reading').textContent = baroSetting.toFixed(2) + ' inHg';
+            updateKollsmanWindow();
         });
 
         document.getElementById('toggle-display').addEventListener('click', function() {
@@ -816,9 +1222,7 @@
             steamGauges.visible = !showGlass;
             g5Display.visible = showGlass;
             this.textContent = showGlass ? 'Switch to Steam Gauges' : 'Switch to Glass (G5)';
-            if (showGlass) {
-                updateG5Display();
-            }
+            if (showGlass) updateG5Display();
         });
 
         document.getElementById('toggle-internal').addEventListener('click', function() {
@@ -840,53 +1244,39 @@
             camera.lookAt(0, 0, 0);
         });
 
-        // Update instrument needles and displays
+        // Update instruments
         function updateInstruments() {
-            // ASI needle (0-200 knots = 0-360 degrees)
-            if (asiNeedle) {
-                const asiAngle = (airspeed / 200) * Math.PI * 2;
-                asiNeedle.rotation.z = -asiAngle;
-            }
+            // ASI needle (0-200 knots, 270 degree sweep from 9 o'clock)
+            const asiAngle = Math.PI + (airspeed / 200) * 1.5 * Math.PI;
+            airspeedGauge.userData.needle.rotation.z = -asiAngle + Math.PI / 2;
 
             // Altimeter needles
-            if (alt100Needle) {
-                const alt100Angle = ((altitude % 1000) / 1000) * Math.PI * 2;
-                alt100Needle.rotation.z = -alt100Angle;
-            }
-            if (alt1000Needle) {
-                const alt1000Angle = ((altitude % 10000) / 10000) * Math.PI * 2;
-                alt1000Needle.rotation.z = -alt1000Angle;
-            }
-            if (alt10000Needle) {
-                const alt10000Angle = (altitude / 100000) * Math.PI * 2;
-                alt10000Needle.rotation.z = -alt10000Angle;
-            }
+            const alt100Angle = ((altitude % 1000) / 1000) * Math.PI * 2;
+            altimeterGauge.userData.needle100.rotation.z = alt100Angle + Math.PI / 2;
 
-            // VSI needle (-2000 to +2000 fpm, 180 degree sweep)
-            if (vsiNeedle) {
-                const vsiAngle = (verticalSpeed / 2000) * (Math.PI / 2);
-                vsiNeedle.rotation.z = -vsiAngle;
-            }
+            const alt1000Angle = ((altitude % 10000) / 10000) * Math.PI * 2;
+            altimeterGauge.userData.needle1000.rotation.z = alt1000Angle + Math.PI / 2;
 
-            // Animate aneroid wafers based on pressure changes
+            const alt10000Angle = (altitude / 100000) * Math.PI * 2;
+            altimeterGauge.userData.needle10000.rotation.z = alt10000Angle + Math.PI / 2;
+
+            // VSI needle (±2000 fpm, 270 degree sweep, 0 at 9 o'clock)
+            const vsiAngle = Math.PI + (verticalSpeed / 2000) * (3 * Math.PI / 4);
+            vsiGauge.userData.needle.rotation.z = -vsiAngle + Math.PI / 2;
+
+            // Animate aneroids
             if (showInternal) {
-                // ASI aneroid expands with airspeed
                 const asiExpansion = 1 + (airspeed / 200) * 0.3;
                 asiAneroid.scale.set(0.8 * asiExpansion, 0.8, 0.8);
 
-                // Altimeter aneroid expands with altitude
                 const altExpansion = 1 + (altitude / 10000) * 0.4;
                 altAneroid.scale.set(0.8, 0.8 * altExpansion, 0.8);
 
-                // VSI aneroid shows vertical speed
                 const vsiExpansion = 1 + Math.abs(verticalSpeed / 2000) * 0.2;
                 vsiAneroid.scale.set(0.8, 0.8 * vsiExpansion, 0.8);
             }
 
-            // Update G5 display if visible
-            if (showGlass) {
-                updateG5Display();
-            }
+            if (showGlass) updateG5Display();
         }
 
         // Mouse interaction
@@ -902,11 +1292,9 @@
             if (isDragging) {
                 const deltaX = e.clientX - previousMousePosition.x;
                 const deltaY = e.clientY - previousMousePosition.y;
-
                 instrumentPanel.rotation.y += deltaX * 0.01;
                 plumbingSystem.rotation.y += deltaX * 0.01;
                 internalMechanisms.rotation.y += deltaX * 0.01;
-
                 previousMousePosition = { x: e.clientX, y: e.clientY };
             }
         });
@@ -928,14 +1316,15 @@
             renderer.render(scene, camera);
         }
 
-        // Window resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Start
+        // Initialize Kollsman window
+        updateKollsmanWindow();
+
         animate();
     </script>
 </body>
