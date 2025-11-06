@@ -3,330 +3,564 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avionics Wire Crimping - AC 43.13-1B Compliant</title>
+    <title>High-Density Contact Crimping - Part 145 Training</title>
     <style>
-        body {
+        * {
             margin: 0;
-            overflow: hidden;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #2c3e50;
+        }
+
         #canvas-container {
             width: 100vw;
             height: 100vh;
             position: relative;
         }
+
         #info-panel {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 350px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.97);
+            padding: 20px 25px;
+            border-radius: 8px;
+            max-width: 380px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             z-index: 100;
+            border-left: 4px solid #e67e22;
         }
+
         h1 {
-            margin: 0 0 10px 0;
-            font-size: 20px;
-            color: #1e3c72;
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            color: #2c3e50;
+            font-weight: 600;
         }
-        h2 {
-            margin: 15px 0 8px 0;
-            font-size: 16px;
-            color: #2a5298;
-            border-bottom: 2px solid #2a5298;
-            padding-bottom: 5px;
-        }
-        ul {
-            margin: 8px 0;
-            padding-left: 20px;
-        }
-        li {
-            margin: 5px 0;
+
+        .subtitle {
+            color: #7f8c8d;
             font-size: 13px;
-            line-height: 1.4;
+            margin-bottom: 15px;
+            font-weight: 500;
         }
+
+        h2 {
+            margin: 18px 0 10px 0;
+            font-size: 15px;
+            color: #e67e22;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e67e22;
+            padding-bottom: 6px;
+        }
+
+        ul {
+            margin: 10px 0;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        li {
+            margin: 8px 0;
+            font-size: 13px;
+            line-height: 1.5;
+            padding-left: 24px;
+            position: relative;
+        }
+
+        li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .spec-table {
+            width: 100%;
+            margin: 10px 0;
+            font-size: 12px;
+            border-collapse: collapse;
+        }
+
+        .spec-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .spec-table td:first-child {
+            font-weight: 600;
+            color: #34495e;
+            width: 45%;
+        }
+
+        .spec-table td:last-child {
+            color: #7f8c8d;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .warning-box strong {
+            color: #856404;
+            display: block;
+            margin-bottom: 5px;
+        }
+
         .controls {
             position: absolute;
             bottom: 20px;
             left: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.97);
+            padding: 18px;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             z-index: 100;
         }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 600;
+        }
+
         button {
-            background: #2a5298;
+            background: #3498db;
             color: white;
             border: none;
-            padding: 10px 20px;
-            margin: 5px;
+            padding: 10px 18px;
+            margin: 4px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
         }
+
         button:hover {
-            background: #1e3c72;
+            background: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
         }
+
         button.active {
-            background: #ff6b6b;
+            background: #e67e22;
+            box-shadow: 0 2px 8px rgba(230, 126, 34, 0.3);
         }
-        .label {
+
+        button.active:hover {
+            background: #d35400;
+        }
+
+        .label-3d {
             position: absolute;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 5px;
+            background: rgba(231, 76, 60, 0.95);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
             font-size: 12px;
+            font-weight: 600;
             pointer-events: none;
-            border: 1px solid #2a5298;
             display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 2px solid white;
+            z-index: 50;
+            white-space: nowrap;
+            line-height: 1.4;
         }
-        .spec {
-            color: #666;
-            font-size: 12px;
-            font-style: italic;
-            margin: 5px 0;
+
+        .label-3d:after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 30px;
+            background: white;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
         }
-        .warning {
-            color: #d63031;
-            font-weight: bold;
+
+        .label-3d.show {
+            display: block;
         }
-        .good {
-            color: #00b894;
-            font-weight: bold;
+
+        .ref-standard {
+            background: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 11px;
+            color: #34495e;
+            line-height: 1.5;
+        }
+
+        .ref-standard strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
         }
     </style>
 </head>
 <body>
     <div id="canvas-container"></div>
 
+    <!-- 3D Labels -->
+    <div id="label-strip" class="label-3d">
+        Strip Length: 0.095" (2.4mm)<br>Per M22520/2-01
+    </div>
+    <div id="label-crimp" class="label-3d">
+        Wire Barrel Crimp<br>4-Indent Pattern
+    </div>
+    <div id="label-insulation" class="label-3d">
+        Insulation Support<br>Crimped on Jacket Only
+    </div>
+    <div id="label-contact" class="label-3d">
+        Gold Plated Contact<br>Size 22D Male Pin
+    </div>
+    <div id="label-inspection" class="label-3d">
+        Inspection Hole<br>Verify Conductor Present
+    </div>
+
     <div id="info-panel">
-        <h1>✈️ Avionics Wire Crimping</h1>
-        <p class="spec">Per AC 43.13-1B Chapter 11</p>
+        <h1>⚡ HD Contact Crimping Training</h1>
+        <div class="subtitle">Part 145 Certified • AC 43.13-1B Ch.11</div>
 
-        <h2>Proper Crimp Requirements</h2>
+        <h2>Contact Specifications</h2>
+        <table class="spec-table">
+            <tr>
+                <td>Contact Type:</td>
+                <td>Size 22D Male Pin</td>
+            </tr>
+            <tr>
+                <td>Wire Size:</td>
+                <td>22 AWG (7×30)</td>
+            </tr>
+            <tr>
+                <td>Wire Spec:</td>
+                <td>MIL-W-22759/16</td>
+            </tr>
+            <tr>
+                <td>Crimp Tool:</td>
+                <td>M22520/2-01</td>
+            </tr>
+            <tr>
+                <td>Positioner:</td>
+                <td>M22520/2-22</td>
+            </tr>
+            <tr>
+                <td>Strip Length:</td>
+                <td>0.095" (3/32")</td>
+            </tr>
+            <tr>
+                <td>Pull Test:</td>
+                <td>7.5 lbs minimum</td>
+            </tr>
+        </table>
+
+        <h2>Visual Inspection Criteria</h2>
         <ul>
-            <li><span class="good">✓</span> Strip length: 1/16" to 1/8"</li>
-            <li><span class="good">✓</span> No broken or nicked strands</li>
-            <li><span class="good">✓</span> Even barrel compression</li>
-            <li><span class="good">✓</span> Hex crimp pattern visible</li>
-            <li><span class="good">✓</span> Insulation support engaged</li>
-            <li><span class="good">✓</span> No protruding strands</li>
+            <li>No bell-mouthing of wire</li>
+            <li>Conductor visible in hole</li>
+            <li>4 crimp indents visible</li>
+            <li>No stray wire strands</li>
+            <li>Insulation flush to support</li>
+            <li>No crushed insulation</li>
+            <li>Even crimp compression</li>
         </ul>
 
-        <h2>Specifications</h2>
-        <ul>
-            <li>Wire: 22 AWG (7×30 strands)</li>
-            <li>Pin: High-density contact</li>
-            <li>Crimp Tool: M22520/2-01</li>
-            <li>Pull Test: Min 7.5 lbs</li>
-        </ul>
+        <div class="warning-box">
+            <strong>⚠ CRITICAL DEFECTS</strong>
+            Cut/nicked strands, bell-mouth, missing strands, insulation in wire barrel, improper tool, or failed pull test = REJECT contact
+        </div>
 
-        <p class="spec" style="margin-top: 15px;">
-            <span class="warning">⚠</span> Always use calibrated crimp tools and verify with pull test
-        </p>
+        <div class="ref-standard">
+            <strong>Reference Standards:</strong>
+            AC 43.13-1B Chapter 11, Section 5<br>
+            MIL-STD-1130 (Crimping)<br>
+            IPC/WHMA-A-620 Class 3
+        </div>
     </div>
 
     <div class="controls">
-        <button id="toggle-cross-section">Show Cross-Section</button>
-        <button id="toggle-rotation">Auto Rotate</button>
-        <button id="toggle-labels">Show Labels</button>
-        <button id="reset-view">Reset View</button>
+        <div class="control-group">
+            <span class="control-label">View Controls</span>
+            <button id="toggle-labels">Show Inspection Labels</button>
+            <button id="toggle-cross-section">Cross-Section View</button>
+        </div>
+        <div class="control-group">
+            <span class="control-label">Animation</span>
+            <button id="toggle-rotation">Auto Rotate</button>
+            <button id="reset-view">Reset Camera</button>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // Scene setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f4f8);
+        scene.background = new THREE.Color(0xe8f4f8);
+        scene.fog = new THREE.Fog(0xe8f4f8, 50, 100);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(15, 10, 15);
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(25, 15, 25);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.localClippingEnabled = true;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Enhanced lighting for realism
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight1.position.set(10, 10, 5);
-        directionalLight1.castShadow = true;
-        scene.add(directionalLight1);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        mainLight.position.set(15, 20, 10);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        scene.add(mainLight);
 
-        const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-        directionalLight2.position.set(-10, 5, -5);
-        scene.add(directionalLight2);
+        const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.3);
+        fillLight1.position.set(-15, 10, -10);
+        scene.add(fillLight1);
 
-        const spotLight = new THREE.SpotLight(0xffffff, 0.5);
-        spotLight.position.set(0, 15, 0);
-        scene.add(spotLight);
+        const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.2);
+        fillLight2.position.set(0, -10, 10);
+        scene.add(fillLight2);
 
-        // Materials
-        const copperMaterial = new THREE.MeshStandardMaterial({
-            color: 0xb87333,
-            metalness: 0.8,
-            roughness: 0.2
+        const rimLight = new THREE.DirectionalLight(0xadd8e6, 0.4);
+        rimLight.position.set(-10, 5, -15);
+        scene.add(rimLight);
+
+        // Realistic Materials
+        const whiteInsulationMaterial = new THREE.MeshStandardMaterial({
+            color: 0xf5f5f5,
+            metalness: 0.05,
+            roughness: 0.6,
+            envMapIntensity: 0.3
         });
 
-        const insulationMaterial = new THREE.MeshStandardMaterial({
-            color: 0xff0000,
-            metalness: 0.1,
-            roughness: 0.7,
-            transparent: false
+        const copperStrandMaterial = new THREE.MeshStandardMaterial({
+            color: 0xd4774e,
+            metalness: 0.7,
+            roughness: 0.3
         });
 
-        const pinMaterial = new THREE.MeshStandardMaterial({
-            color: 0xc0c0c0,
+        const goldPlateMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffd700,
+            metalness: 0.95,
+            roughness: 0.05,
+            envMapIntensity: 1.0
+        });
+
+        const silverCrimpMaterial = new THREE.MeshStandardMaterial({
+            color: 0xe0e0e0,
             metalness: 0.9,
-            roughness: 0.1
-        });
-
-        const crimpBarrelMaterial = new THREE.MeshStandardMaterial({
-            color: 0xd4af37,
-            metalness: 0.85,
             roughness: 0.15
         });
 
-        // Create wire assembly group
-        const wireAssembly = new THREE.Group();
+        const crimpedMetalMaterial = new THREE.MeshStandardMaterial({
+            color: 0xc0c0c0,
+            metalness: 0.85,
+            roughness: 0.25
+        });
 
-        // Wire insulation (red)
-        const insulationLength = 30;
-        const insulationGeometry = new THREE.CylinderGeometry(0.5, 0.5, insulationLength, 32);
-        const insulation = new THREE.Mesh(insulationGeometry, insulationMaterial);
-        insulation.rotation.z = Math.PI / 2;
-        insulation.position.x = -insulationLength / 2 - 2;
-        insulation.castShadow = true;
-        wireAssembly.add(insulation);
+        // Main assembly group
+        const contactAssembly = new THREE.Group();
 
-        // Wire conductor strands (individual strands for realism)
-        const strandGroup = new THREE.Group();
-        const numStrands = 7; // 7 strand wire
-        const strandRadius = 0.08;
-        const exposedLength = 2.5; // Strip length per AC 43.13-1B
-
-        // Center strand
-        const centerStrand = new THREE.Mesh(
-            new THREE.CylinderGeometry(strandRadius, strandRadius, exposedLength, 16),
-            copperMaterial
+        // White avionics wire insulation (MIL-W-22759)
+        const wireLength = 40;
+        const wireOuterDiameter = 0.8; // 22 AWG with insulation
+        const insulationGeometry = new THREE.CylinderGeometry(
+            wireOuterDiameter, wireOuterDiameter, wireLength, 32
         );
-        centerStrand.rotation.z = Math.PI / 2;
-        centerStrand.position.x = exposedLength / 2;
-        centerStrand.castShadow = true;
-        strandGroup.add(centerStrand);
+        const wireInsulation = new THREE.Mesh(insulationGeometry, whiteInsulationMaterial);
+        wireInsulation.rotation.z = Math.PI / 2;
+        wireInsulation.position.x = -wireLength / 2 - 3;
+        wireInsulation.castShadow = true;
+        wireInsulation.receiveShadow = true;
+        contactAssembly.add(wireInsulation);
 
-        // Surrounding 6 strands in circle pattern
-        for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2;
-            const strand = new THREE.Mesh(
-                new THREE.CylinderGeometry(strandRadius, strandRadius, exposedLength, 16),
-                copperMaterial
+        // Stripped conductor section with individual strands
+        const stripLength = 1.2; // 3/32" scaled
+        const conductorDiameter = 0.4; // 22 AWG bare conductor
+        const strandGroup = new THREE.Group();
+
+        // 7 strand wire construction (realistic for 22 AWG)
+        const strandRadius = 0.06;
+        const strandPositions = [
+            { y: 0, z: 0 }, // center
+            { y: 0.12, z: 0 },
+            { y: -0.12, z: 0 },
+            { y: 0, z: 0.12 },
+            { y: 0, z: -0.12 },
+            { y: 0.085, z: 0.085 },
+            { y: -0.085, z: -0.085 }
+        ];
+
+        strandPositions.forEach(pos => {
+            const strandGeometry = new THREE.CylinderGeometry(
+                strandRadius, strandRadius, stripLength, 12
             );
+            const strand = new THREE.Mesh(strandGeometry, copperStrandMaterial);
             strand.rotation.z = Math.PI / 2;
-            strand.position.x = exposedLength / 2;
-            strand.position.y = Math.cos(angle) * 0.15;
-            strand.position.z = Math.sin(angle) * 0.15;
+            strand.position.set(stripLength / 2, pos.y, pos.z);
             strand.castShadow = true;
             strandGroup.add(strand);
-        }
+        });
 
-        wireAssembly.add(strandGroup);
+        contactAssembly.add(strandGroup);
 
-        // Crimp barrel (conductor crimp)
-        const crimpBarrelLength = 2.8;
-        const crimpBarrelGeometry = new THREE.CylinderGeometry(0.55, 0.55, crimpBarrelLength, 6); // Hexagonal
-        const crimpBarrel = new THREE.Mesh(crimpBarrelGeometry, crimpBarrelMaterial);
-        crimpBarrel.rotation.z = Math.PI / 2;
-        crimpBarrel.position.x = exposedLength / 2 - 0.2;
-        crimpBarrel.castShadow = true;
+        // High-density contact assembly
+        const contactGroup = new THREE.Group();
 
-        // Add crimp indentations
-        const indentGeometry = new THREE.BoxGeometry(0.1, 1.2, 0.05);
+        // Wire barrel (conductor crimp area) - 4 indent crimp
+        const wireBarrelLength = 1.5;
+        const wireBarrelRadius = 0.5;
+        const wireBarrelGeometry = new THREE.CylinderGeometry(
+            wireBarrelRadius, wireBarrelRadius, wireBarrelLength, 8
+        );
+        const wireBarrel = new THREE.Mesh(wireBarrelGeometry, silverCrimpMaterial);
+        wireBarrel.rotation.z = Math.PI / 2;
+        wireBarrel.position.x = 0.5;
+        wireBarrel.castShadow = true;
+
+        // Add 4 crimp indentations (realistic)
+        const indentGeometry = new THREE.BoxGeometry(0.08, 0.9, 0.06);
         const indentMaterial = new THREE.MeshStandardMaterial({
-            color: 0xb8941e,
+            color: 0xa8a8a8,
             metalness: 0.9,
             roughness: 0.3
         });
 
-        for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2;
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
             const indent = new THREE.Mesh(indentGeometry, indentMaterial);
-            indent.position.y = Math.cos(angle) * 0.55;
-            indent.position.z = Math.sin(angle) * 0.55;
-            crimpBarrel.add(indent);
+            indent.position.y = Math.cos(angle) * wireBarrelRadius;
+            indent.position.z = Math.sin(angle) * wireBarrelRadius;
+            wireBarrel.add(indent);
         }
 
-        wireAssembly.add(crimpBarrel);
+        contactGroup.add(wireBarrel);
 
-        // Insulation support crimp
-        const insulationSupportGeometry = new THREE.CylinderGeometry(0.6, 0.6, 2.0, 6);
-        const insulationSupport = new THREE.Mesh(insulationSupportGeometry, crimpBarrelMaterial);
+        // Inspection hole (to verify conductor presence)
+        const inspectionHoleGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.55, 16);
+        const inspectionHole = new THREE.Mesh(inspectionHoleGeometry, copperStrandMaterial);
+        inspectionHole.position.y = 0;
+        inspectionHole.position.z = 0.35;
+        wireBarrel.add(inspectionHole);
+
+        // Insulation support barrel
+        const insulationSupportLength = 1.3;
+        const insulationSupportRadius = 0.55;
+        const insulationSupportGeometry = new THREE.CylinderGeometry(
+            insulationSupportRadius, insulationSupportRadius, insulationSupportLength, 8
+        );
+        const insulationSupport = new THREE.Mesh(insulationSupportGeometry, silverCrimpMaterial);
         insulationSupport.rotation.z = Math.PI / 2;
-        insulationSupport.position.x = -1.5;
+        insulationSupport.position.x = -0.8;
         insulationSupport.castShadow = true;
 
-        // Add crimp indentations to insulation support
-        for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2;
+        // Insulation support crimp indents
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
             const indent = new THREE.Mesh(indentGeometry, indentMaterial);
-            indent.position.y = Math.cos(angle) * 0.6;
-            indent.position.z = Math.sin(angle) * 0.6;
+            indent.position.y = Math.cos(angle) * insulationSupportRadius;
+            indent.position.z = Math.sin(angle) * insulationSupportRadius;
             insulationSupport.add(indent);
         }
 
-        wireAssembly.add(insulationSupport);
+        contactGroup.add(insulationSupport);
 
-        // Pin contact (high-density style)
-        const pinGroup = new THREE.Group();
+        // Contact transition area
+        const transitionGeometry = new THREE.CylinderGeometry(0.45, 0.3, 0.8, 16);
+        const transition = new THREE.Mesh(transitionGeometry, goldPlateMaterial);
+        transition.rotation.z = Math.PI / 2;
+        transition.position.x = 1.7;
+        transition.castShadow = true;
+        contactGroup.add(transition);
 
-        // Pin barrel (socket end)
-        const pinBarrelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 2.5, 32);
-        const pinBarrel = new THREE.Mesh(pinBarrelGeometry, pinMaterial);
-        pinBarrel.rotation.z = Math.PI / 2;
-        pinBarrel.position.x = 4;
-        pinBarrel.castShadow = true;
-        pinGroup.add(pinBarrel);
+        // Male pin contact body (gold plated)
+        const contactBodyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3.5, 16);
+        const contactBody = new THREE.Mesh(contactBodyGeometry, goldPlateMaterial);
+        contactBody.rotation.z = Math.PI / 2;
+        contactBody.position.x = 4;
+        contactBody.castShadow = true;
+        contactGroup.add(contactBody);
 
-        // Pin tip (contact end)
-        const pinTipGeometry = new THREE.CylinderGeometry(0.25, 0.4, 1.5, 32);
-        const pinTip = new THREE.Mesh(pinTipGeometry, pinMaterial);
+        // Pin tip with chamfer
+        const pinTipGeometry = new THREE.CylinderGeometry(0.25, 0.3, 0.8, 16);
+        const pinTip = new THREE.Mesh(pinTipGeometry, goldPlateMaterial);
         pinTip.rotation.z = Math.PI / 2;
-        pinTip.position.x = 5.5;
+        pinTip.position.x = 5.9;
         pinTip.castShadow = true;
-        pinGroup.add(pinTip);
+        contactGroup.add(pinTip);
 
         // Pin point
-        const pinPointGeometry = new THREE.ConeGeometry(0.25, 0.5, 32);
-        const pinPoint = new THREE.Mesh(pinPointGeometry, pinMaterial);
+        const pinPointGeometry = new THREE.ConeGeometry(0.25, 0.6, 16);
+        const pinPoint = new THREE.Mesh(pinPointGeometry, goldPlateMaterial);
         pinPoint.rotation.z = -Math.PI / 2;
-        pinPoint.position.x = 6.5;
+        pinPoint.position.x = 6.6;
         pinPoint.castShadow = true;
-        pinGroup.add(pinPoint);
+        contactGroup.add(pinPoint);
 
-        wireAssembly.add(pinGroup);
+        contactAssembly.add(contactGroup);
+        scene.add(contactAssembly);
 
-        scene.add(wireAssembly);
+        // Ground plane with shadow
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.2 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -8;
+        ground.receiveShadow = true;
+        scene.add(ground);
 
-        // Grid and axis helpers
-        const gridHelper = new THREE.GridHelper(50, 50, 0xcccccc, 0xe0e0e0);
-        gridHelper.position.y = -5;
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(50, 50, 0xbbbbbb, 0xdddddd);
+        gridHelper.position.y = -7.9;
         scene.add(gridHelper);
 
-        // Simple orbit controls (mouse interaction)
+        // Interaction variables
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
         let autoRotate = false;
         let showCrossSection = false;
+        let showLabels = false;
+        let clipPlane = null;
 
+        // Mouse controls
         renderer.domElement.addEventListener('mousedown', (e) => {
             isDragging = true;
             previousMousePosition = { x: e.clientX, y: e.clientY };
@@ -337,10 +571,14 @@
                 const deltaX = e.clientX - previousMousePosition.x;
                 const deltaY = e.clientY - previousMousePosition.y;
 
-                wireAssembly.rotation.y += deltaX * 0.01;
-                wireAssembly.rotation.x += deltaY * 0.01;
+                contactAssembly.rotation.y += deltaX * 0.01;
+                contactAssembly.rotation.x += deltaY * 0.01;
 
                 previousMousePosition = { x: e.clientX, y: e.clientY };
+
+                if (showLabels) {
+                    updateLabels();
+                }
             }
         });
 
@@ -348,47 +586,91 @@
             isDragging = false;
         });
 
-        // Zoom with mouse wheel
         renderer.domElement.addEventListener('wheel', (e) => {
             e.preventDefault();
-            camera.position.z += e.deltaY * 0.01;
-            camera.position.z = Math.max(5, Math.min(30, camera.position.z));
+            const zoomSpeed = 0.02;
+            camera.position.multiplyScalar(1 + (e.deltaY > 0 ? zoomSpeed : -zoomSpeed));
+            camera.position.clampLength(10, 50);
+
+            if (showLabels) {
+                updateLabels();
+            }
         });
 
+        // Label positioning
+        function updateLabels() {
+            const labels = [
+                { id: 'label-strip', position: new THREE.Vector3(0.5, 0, 0) },
+                { id: 'label-crimp', position: new THREE.Vector3(0.5, 0, 0.8) },
+                { id: 'label-insulation', position: new THREE.Vector3(-0.8, 0, 0.8) },
+                { id: 'label-contact', position: new THREE.Vector3(4, 0, 0.6) },
+                { id: 'label-inspection', position: new THREE.Vector3(0.5, 0, -0.8) }
+            ];
+
+            labels.forEach(label => {
+                const worldPos = label.position.clone();
+                contactAssembly.localToWorld(worldPos);
+                const screenPos = worldPos.project(camera);
+
+                const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (screenPos.y * -0.5 + 0.5) * window.innerHeight;
+
+                const labelEl = document.getElementById(label.id);
+                labelEl.style.left = x + 'px';
+                labelEl.style.top = y + 'px';
+            });
+        }
+
         // Control buttons
+        document.getElementById('toggle-labels').addEventListener('click', function() {
+            showLabels = !showLabels;
+            this.classList.toggle('active');
+
+            const labels = document.querySelectorAll('.label-3d');
+            labels.forEach(label => {
+                label.classList.toggle('show', showLabels);
+            });
+
+            if (showLabels) {
+                updateLabels();
+                this.textContent = 'Hide Inspection Labels';
+            } else {
+                this.textContent = 'Show Inspection Labels';
+            }
+        });
+
         document.getElementById('toggle-cross-section').addEventListener('click', function() {
             showCrossSection = !showCrossSection;
             this.classList.toggle('active');
 
-            // Create cross-section by hiding half of components
             if (showCrossSection) {
-                // Add clipping plane
-                const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+                clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
                 renderer.clippingPlanes = [clipPlane];
-                renderer.localClippingEnabled = true;
 
-                crimpBarrel.material.clippingPlanes = [clipPlane];
+                wireInsulation.material = whiteInsulationMaterial.clone();
+                wireInsulation.material.clippingPlanes = [clipPlane];
+                wireInsulation.material.side = THREE.DoubleSide;
+
+                wireBarrel.material = silverCrimpMaterial.clone();
+                wireBarrel.material.clippingPlanes = [clipPlane];
+                wireBarrel.material.side = THREE.DoubleSide;
+
+                insulationSupport.material = silverCrimpMaterial.clone();
                 insulationSupport.material.clippingPlanes = [clipPlane];
-                insulation.material.clippingPlanes = [clipPlane];
+                insulationSupport.material.side = THREE.DoubleSide;
 
-                strandGroup.children.forEach(strand => {
-                    strand.material.clippingPlanes = [clipPlane];
-                });
+                contactBody.material = goldPlateMaterial.clone();
+                contactBody.material.clippingPlanes = [clipPlane];
+                contactBody.material.side = THREE.DoubleSide;
 
                 this.textContent = 'Hide Cross-Section';
             } else {
                 renderer.clippingPlanes = [];
-                renderer.localClippingEnabled = false;
-
-                crimpBarrel.material.clippingPlanes = [];
-                insulationSupport.material.clippingPlanes = [];
-                insulation.material.clippingPlanes = [];
-
-                strandGroup.children.forEach(strand => {
-                    strand.material.clippingPlanes = [];
-                });
-
-                this.textContent = 'Show Cross-Section';
+                wireInsulation.material = whiteInsulationMaterial;
+                wireBarrel.material = silverCrimpMaterial;
+                insulationSupport.material = silverCrimpMaterial;
+                contactBody.material = goldPlateMaterial;
+                this.textContent = 'Cross-Section View';
             }
         });
 
@@ -398,16 +680,14 @@
             this.textContent = autoRotate ? 'Stop Rotation' : 'Auto Rotate';
         });
 
-        document.getElementById('toggle-labels').addEventListener('click', function() {
-            this.classList.toggle('active');
-            // Label functionality placeholder
-            alert('Label feature: Click on components to see detailed specifications');
-        });
-
         document.getElementById('reset-view').addEventListener('click', () => {
-            wireAssembly.rotation.set(0, 0, 0);
-            camera.position.set(15, 10, 15);
+            contactAssembly.rotation.set(0, 0, 0);
+            camera.position.set(25, 15, 25);
             camera.lookAt(0, 0, 0);
+
+            if (showLabels) {
+                updateLabels();
+            }
         });
 
         // Animation loop
@@ -415,20 +695,30 @@
             requestAnimationFrame(animate);
 
             if (autoRotate && !isDragging) {
-                wireAssembly.rotation.y += 0.005;
+                contactAssembly.rotation.y += 0.005;
+                contactAssembly.rotation.x = Math.sin(Date.now() * 0.0005) * 0.1;
+
+                if (showLabels) {
+                    updateLabels();
+                }
             }
 
             camera.lookAt(0, 0, 0);
             renderer.render(scene, camera);
         }
 
-        // Handle window resize
+        // Window resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+
+            if (showLabels) {
+                updateLabels();
+            }
         });
 
+        // Start animation
         animate();
     </script>
 </body>
