@@ -917,12 +917,30 @@
             document.getElementById('statShops').textContent = shops;
         }
 
-        // Geocoding function
+        // Sleep/delay function for rate limiting
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Geocoding function with rate limiting
         async function geocodeAddress(address) {
             if (!address) return null;
 
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+                // Add delay to respect Nominatim rate limits (1 request per second)
+                await sleep(1000);
+
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`, {
+                    headers: {
+                        'User-Agent': 'AEA-Location-Map/1.0'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('Geocoding HTTP error:', response.status);
+                    return null;
+                }
+
                 const data = await response.json();
 
                 if (data && data.length > 0) {
@@ -936,6 +954,59 @@
             }
 
             return null;
+        }
+
+        // Proper CSV parser that handles quoted fields
+        function parseCSV(text) {
+            const rows = [];
+            let currentRow = [];
+            let currentField = '';
+            let insideQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (insideQuotes && nextChar === '"') {
+                        // Escaped quote
+                        currentField += '"';
+                        i++; // Skip next quote
+                    } else {
+                        // Toggle quote state
+                        insideQuotes = !insideQuotes;
+                    }
+                } else if (char === ',' && !insideQuotes) {
+                    // End of field
+                    currentRow.push(currentField.trim());
+                    currentField = '';
+                } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+                    // End of row
+                    if (char === '\r' && nextChar === '\n') {
+                        i++; // Skip \n in \r\n
+                    }
+                    if (currentField || currentRow.length > 0) {
+                        currentRow.push(currentField.trim());
+                        if (currentRow.some(field => field !== '')) {
+                            rows.push(currentRow);
+                        }
+                        currentRow = [];
+                        currentField = '';
+                    }
+                } else {
+                    currentField += char;
+                }
+            }
+
+            // Add last field and row
+            if (currentField || currentRow.length > 0) {
+                currentRow.push(currentField.trim());
+                if (currentRow.some(field => field !== '')) {
+                    rows.push(currentRow);
+                }
+            }
+
+            return rows;
         }
 
         // Show/hide program type field based on type selection
@@ -1051,68 +1122,124 @@
 
             const reader = new FileReader();
             reader.onload = async function(e) {
-                const text = e.target.result;
-                const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim()));
+                try {
+                    const text = e.target.result;
 
-                if (rows.length < 2) {
-                    hideLoading();
-                    alert('CSV file is empty or invalid');
-                    return;
-                }
+                    // Use proper CSV parser that handles quoted fields
+                    const rows = parseCSV(text);
 
-                const headers = rows[0].map(h => h.toLowerCase());
-                const newLocations = [];
+                    if (rows.length < 2) {
+                        hideLoading();
+                        alert('CSV file is empty or invalid. Must have at least a header row and one data row.');
+                        return;
+                    }
 
-                for (let i = 1; i < rows.length; i++) {
-                    if (rows[i].length < headers.length) continue;
+                    const headers = rows[0].map(h => h.toLowerCase().replace(/['"]/g, ''));
+                    const newLocations = [];
+                    const errors = [];
 
-                    const rowData = {};
-                    headers.forEach((header, index) => {
-                        rowData[header] = rows[i][index];
-                    });
+                    console.log('CSV Headers:', headers);
 
-                    if (!rowData.name || !rowData.type) continue;
+                    for (let i = 1; i < rows.length; i++) {
+                        // Skip empty rows
+                        if (!rows[i] || rows[i].every(cell => !cell)) continue;
 
-                    let lat = parseFloat(rowData.lat);
-                    let lng = parseFloat(rowData.lng);
+                        const rowData = {};
+                        headers.forEach((header, index) => {
+                            if (rows[i][index] !== undefined) {
+                                // Remove surrounding quotes if present
+                                rowData[header] = rows[i][index].replace(/^["']|["']$/g, '');
+                            }
+                        });
 
-                    // Geocode if no coordinates
-                    if ((!lat || !lng) && rowData.address) {
-                        showLoading(`Geocoding ${i}/${rows.length - 1}: ${rowData.name}...`);
-                        const coords = await geocodeAddress(rowData.address);
-                        if (coords) {
-                            lat = coords.lat;
-                            lng = coords.lng;
+                        console.log(`Row ${i}:`, rowData);
+
+                        if (!rowData.name || !rowData.type) {
+                            errors.push(`Row ${i + 1}: Missing required fields (name or type)`);
+                            continue;
+                        }
+
+                        let lat = parseFloat(rowData.lat);
+                        let lng = parseFloat(rowData.lng);
+
+                        // Geocode if no coordinates
+                        if ((!lat || !lng || isNaN(lat) || isNaN(lng)) && rowData.address) {
+                            showLoading(`Geocoding ${i}/${rows.length - 1}: ${rowData.name}...`);
+                            try {
+                                const coords = await geocodeAddress(rowData.address);
+                                if (coords) {
+                                    lat = coords.lat;
+                                    lng = coords.lng;
+                                    console.log(`Geocoded ${rowData.name}:`, lat, lng);
+                                } else {
+                                    errors.push(`Row ${i + 1}: Could not geocode address for "${rowData.name}"`);
+                                }
+                            } catch (geocodeError) {
+                                console.error('Geocoding error:', geocodeError);
+                                errors.push(`Row ${i + 1}: Geocoding failed for "${rowData.name}"`);
+                            }
+                        }
+
+                        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+                            newLocations.push({
+                                id: nextId++,
+                                type: rowData.type.toLowerCase(),
+                                name: rowData.name,
+                                address: rowData.address || '',
+                                lat: lat,
+                                lng: lng,
+                                programType: rowData.programtype || rowData.programType || '',
+                                contactPerson: rowData.contactperson || rowData.contactPerson || '',
+                                phone: rowData.phone || '',
+                                email: rowData.email || '',
+                                website: rowData.website || ''
+                            });
+                        } else {
+                            errors.push(`Row ${i + 1}: Invalid or missing coordinates for "${rowData.name}"`);
                         }
                     }
 
-                    if (lat && lng) {
-                        newLocations.push({
-                            id: nextId++,
-                            type: rowData.type.toLowerCase(),
-                            name: rowData.name,
-                            address: rowData.address || '',
-                            lat: lat,
-                            lng: lng,
-                            programType: rowData.programtype || rowData.programType || '',
-                            contactPerson: rowData.contactperson || rowData.contactPerson || '',
-                            phone: rowData.phone || '',
-                            email: rowData.email || '',
-                            website: rowData.website || ''
-                        });
+                    hideLoading();
+
+                    // Show results
+                    let message = '';
+                    if (newLocations.length > 0) {
+                        locations = locations.concat(newLocations);
+                        saveData();
+                        message = `✅ Successfully imported ${newLocations.length} location(s)!`;
+
+                        if (errors.length > 0) {
+                            message += `\n\n⚠️ ${errors.length} row(s) had issues:\n${errors.slice(0, 5).join('\n')}`;
+                            if (errors.length > 5) {
+                                message += `\n... and ${errors.length - 5} more. Check console for details.`;
+                            }
+                        }
+
+                        alert(message);
+                        console.log('Import errors:', errors);
+                        document.getElementById('csvFileInput').value = '';
+                    } else {
+                        message = '❌ No valid locations found in CSV.\n\n';
+                        if (errors.length > 0) {
+                            message += `Issues found:\n${errors.slice(0, 5).join('\n')}`;
+                            if (errors.length > 5) {
+                                message += `\n... and ${errors.length - 5} more`;
+                            }
+                        }
+                        message += '\n\nPlease check:\n• CSV has header row (type,name,address,lat,lng,...)\n• Each row has valid data\n• Addresses are complete or coordinates are provided';
+                        alert(message);
+                        console.log('All errors:', errors);
                     }
+                } catch (error) {
+                    hideLoading();
+                    alert('Error processing CSV file: ' + error.message + '\n\nPlease check the file format and try again.');
+                    console.error('CSV processing error:', error);
                 }
+            };
 
+            reader.onerror = function() {
                 hideLoading();
-
-                if (newLocations.length > 0) {
-                    locations = locations.concat(newLocations);
-                    saveData();
-                    alert(`Successfully imported ${newLocations.length} locations!`);
-                    document.getElementById('csvFileInput').value = '';
-                } else {
-                    alert('No valid locations found in CSV');
-                }
+                alert('Error reading file. Please try again.');
             };
 
             reader.readAsText(file);
@@ -1144,31 +1271,50 @@
                 const data = JSON.parse(jsonText);
 
                 if (!Array.isArray(data)) {
-                    alert('JSON must be an array of locations');
+                    alert('JSON must be an array of locations.\n\nExample:\n[\n  {"type": "school", "name": "...", "address": "...", ...}\n]');
+                    return;
+                }
+
+                if (data.length === 0) {
+                    alert('JSON array is empty. Please provide at least one location.');
                     return;
                 }
 
                 showLoading('Importing JSON...');
 
                 const newLocations = [];
+                const errors = [];
 
                 for (let i = 0; i < data.length; i++) {
                     const item = data[i];
+
+                    if (!item.name || !item.type) {
+                        errors.push(`Item ${i + 1}: Missing required fields (name or type)`);
+                        continue;
+                    }
 
                     let lat = parseFloat(item.lat);
                     let lng = parseFloat(item.lng);
 
                     // Geocode if no coordinates
-                    if ((!lat || !lng) && item.address) {
+                    if ((!lat || !lng || isNaN(lat) || isNaN(lng)) && item.address) {
                         showLoading(`Geocoding ${i + 1}/${data.length}: ${item.name}...`);
-                        const coords = await geocodeAddress(item.address);
-                        if (coords) {
-                            lat = coords.lat;
-                            lng = coords.lng;
+                        try {
+                            const coords = await geocodeAddress(item.address);
+                            if (coords) {
+                                lat = coords.lat;
+                                lng = coords.lng;
+                                console.log(`Geocoded ${item.name}:`, lat, lng);
+                            } else {
+                                errors.push(`Item ${i + 1}: Could not geocode address for "${item.name}"`);
+                            }
+                        } catch (geocodeError) {
+                            console.error('Geocoding error:', geocodeError);
+                            errors.push(`Item ${i + 1}: Geocoding failed for "${item.name}"`);
                         }
                     }
 
-                    if (item.name && item.type && lat && lng) {
+                    if (item.name && item.type && lat && lng && !isNaN(lat) && !isNaN(lng)) {
                         newLocations.push({
                             id: nextId++,
                             type: item.type.toLowerCase(),
@@ -1182,23 +1328,47 @@
                             email: item.email || '',
                             website: item.website || ''
                         });
+                    } else {
+                        errors.push(`Item ${i + 1}: Invalid or missing coordinates for "${item.name}"`);
                     }
                 }
 
                 hideLoading();
 
+                // Show results
+                let message = '';
                 if (newLocations.length > 0) {
                     locations = locations.concat(newLocations);
                     saveData();
-                    alert(`Successfully imported ${newLocations.length} locations!`);
+                    message = `✅ Successfully imported ${newLocations.length} location(s)!`;
+
+                    if (errors.length > 0) {
+                        message += `\n\n⚠️ ${errors.length} item(s) had issues:\n${errors.slice(0, 5).join('\n')}`;
+                        if (errors.length > 5) {
+                            message += `\n... and ${errors.length - 5} more. Check console for details.`;
+                        }
+                    }
+
+                    alert(message);
+                    console.log('Import errors:', errors);
                     document.getElementById('jsonInput').value = '';
                 } else {
-                    alert('No valid locations found in JSON');
+                    message = '❌ No valid locations found in JSON.\n\n';
+                    if (errors.length > 0) {
+                        message += `Issues found:\n${errors.slice(0, 5).join('\n')}`;
+                        if (errors.length > 5) {
+                            message += `\n... and ${errors.length - 5} more`;
+                        }
+                    }
+                    message += '\n\nPlease check:\n• Each item has "type", "name", and either "address" or "lat"/"lng"\n• Coordinates are valid numbers\n• Type is "school" or "shop"';
+                    alert(message);
+                    console.log('All errors:', errors);
                 }
 
             } catch (error) {
                 hideLoading();
-                alert('Invalid JSON format: ' + error.message);
+                alert('Invalid JSON format: ' + error.message + '\n\nPlease check your JSON syntax and try again.');
+                console.error('JSON parsing error:', error);
             }
         }
 
