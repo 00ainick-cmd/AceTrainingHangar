@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEA Schools & Shops Locator</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+    <!-- Leaflet HeatMap CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .nav-links {
+            margin-top: 15px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .controls {
+            padding: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .filter-btn.active.schools {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .filter-btn.active.shops {
+            background: #2196F3;
+            color: white;
+            border-color: #2196F3;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #FF5722;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .location-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .location-item {
+            background: white;
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .location-item:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .location-item.school {
+            border-left: 4px solid #4CAF50;
+        }
+
+        .location-item.shop {
+            border-left: 4px solid #2196F3;
+        }
+
+        .location-item h3 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .location-item .type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .location-item .type-badge.school {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .location-item .type-badge.shop {
+            background: #2196F3;
+            color: white;
+        }
+
+        .location-item p {
+            color: #666;
+            font-size: 0.9em;
+            margin: 3px 0;
+        }
+
+        .location-item .contact-info {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .map-legend h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+
+        .legend-marker {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .legend-marker.school {
+            background: #4CAF50;
+        }
+
+        .legend-marker.shop {
+            background: #2196F3;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .no-data h3 {
+            margin-bottom: 10px;
+        }
+
+        /* Custom marker styles */
+        .custom-marker {
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 40vh;
+            }
+
+            .map-container {
+                height: 60vh;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .nav-links a {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+
+        /* Loading spinner */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Popup custom styles */
+        .custom-popup h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .custom-popup p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .custom-popup a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .custom-popup a:hover {
+            text-decoration: underline;
+        }
+
+        .custom-popup .directions-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .custom-popup .directions-btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🗺️ AEA Schools & Member Shops Locator</h1>
+        <p>Find Aviation Education Association schools and member shops near you</p>
+        <div class="nav-links">
+            <a href="index.html">← Back to Training Hub</a>
+            <a href="aea-location-admin.html">Admin Panel</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="controls">
+                <div class="control-group">
+                    <label>Search Locations</label>
+                    <input type="text" class="search-box" id="searchBox" placeholder="Search by name or location...">
+                </div>
+
+                <div class="control-group">
+                    <label>Filter by Type</label>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active schools" id="filterSchools">Schools</button>
+                        <button class="filter-btn active shops" id="filterShops">Shops</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Heatmap View</label>
+                    <div class="toggle-switch">
+                        <span>Off</span>
+                        <label class="switch">
+                            <input type="checkbox" id="heatmapToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span>On</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Clustering</label>
+                    <div class="toggle-switch">
+                        <span>Off</span>
+                        <label class="switch">
+                            <input type="checkbox" id="clusterToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span>On</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="location-list" id="locationList">
+                <div class="no-data">
+                    <h3>No locations yet</h3>
+                    <p>Add locations via the Admin Panel</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-legend">
+                <h4>Legend</h4>
+                <div class="legend-item">
+                    <div class="legend-marker school"></div>
+                    <span>Schools</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-marker shop"></div>
+                    <span>AEA Member Shops</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Leaflet MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <!-- Leaflet HeatMap JS -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <script>
+        // Initialize map centered on USA
+        const map = L.map('map').setView([39.8283, -98.5795], 4);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Data storage
+        let locations = [];
+        let markers = [];
+        let markerClusterGroup = null;
+        let heatmapLayer = null;
+        let showSchools = true;
+        let showShops = true;
+        let useclustering = true;
+
+        // Custom icons
+        const schoolIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background-color: #4CAF50; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        const shopIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background-color: #2196F3; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        // Load locations from localStorage
+        function loadLocations() {
+            const stored = localStorage.getItem('aeaLocations');
+            if (stored) {
+                locations = JSON.parse(stored);
+                updateMap();
+                updateLocationList();
+            }
+        }
+
+        // Create popup content
+        function createPopupContent(location) {
+            const isSchool = location.type === 'school';
+            const label = isSchool ? 'School' : 'AEA Member Shop';
+
+            let html = `
+                <div class="custom-popup">
+                    <h3>${location.name}</h3>
+                    <p><strong>Type:</strong> ${label}</p>
+            `;
+
+            if (location.address) html += `<p><strong>Address:</strong> ${location.address}</p>`;
+            if (isSchool && location.programType) html += `<p><strong>Program:</strong> ${location.programType}</p>`;
+            if (location.contactPerson) html += `<p><strong>Contact:</strong> ${location.contactPerson}</p>`;
+            if (location.phone) html += `<p><strong>Phone:</strong> <a href="tel:${location.phone}">${location.phone}</a></p>`;
+            if (location.email) html += `<p><strong>Email:</strong> <a href="mailto:${location.email}">${location.email}</a></p>`;
+            if (location.website) html += `<p><strong>Website:</strong> <a href="${location.website}" target="_blank">Visit Site</a></p>`;
+
+            html += `<a href="https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}" target="_blank" class="directions-btn">Get Directions</a>`;
+            html += `</div>`;
+
+            return html;
+        }
+
+        // Update map with markers
+        function updateMap() {
+            // Clear existing markers
+            if (markerClusterGroup) {
+                map.removeLayer(markerClusterGroup);
+            }
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+
+            // Filter locations
+            const filteredLocations = locations.filter(loc => {
+                if (loc.type === 'school' && !showSchools) return false;
+                if (loc.type === 'shop' && !showShops) return false;
+                return true;
+            });
+
+            if (filteredLocations.length === 0) return;
+
+            // Create markers
+            if (useclustering) {
+                markerClusterGroup = L.markerClusterGroup({
+                    chunkedLoading: true,
+                    spiderfyOnMaxZoom: true,
+                    showCoverageOnHover: false,
+                    zoomToBoundsOnClick: true
+                });
+            }
+
+            filteredLocations.forEach(location => {
+                if (!location.lat || !location.lng) return;
+
+                const icon = location.type === 'school' ? schoolIcon : shopIcon;
+                const marker = L.marker([location.lat, location.lng], { icon: icon })
+                    .bindPopup(createPopupContent(location));
+
+                if (useclustering) {
+                    markerClusterGroup.addLayer(marker);
+                } else {
+                    marker.addTo(map);
+                }
+
+                markers.push(marker);
+            });
+
+            if (useclustering && markerClusterGroup) {
+                map.addLayer(markerClusterGroup);
+            }
+
+            // Fit bounds to show all markers
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+
+            // Update heatmap if active
+            updateHeatmap();
+        }
+
+        // Update heatmap layer
+        function updateHeatmap() {
+            if (heatmapLayer) {
+                map.removeLayer(heatmapLayer);
+                heatmapLayer = null;
+            }
+
+            const heatmapToggle = document.getElementById('heatmapToggle');
+            if (!heatmapToggle.checked) return;
+
+            // Filter locations for heatmap
+            const filteredLocations = locations.filter(loc => {
+                if (loc.type === 'school' && !showSchools) return false;
+                if (loc.type === 'shop' && !showShops) return false;
+                return loc.lat && loc.lng;
+            });
+
+            if (filteredLocations.length === 0) return;
+
+            // Create heatmap data
+            const heatData = filteredLocations.map(loc => [loc.lat, loc.lng, 1]);
+
+            heatmapLayer = L.heatLayer(heatData, {
+                radius: 25,
+                blur: 15,
+                maxZoom: 10,
+                max: 1.0,
+                gradient: {
+                    0.0: 'blue',
+                    0.5: 'lime',
+                    0.7: 'yellow',
+                    1.0: 'red'
+                }
+            }).addTo(map);
+        }
+
+        // Update location list in sidebar
+        function updateLocationList() {
+            const listContainer = document.getElementById('locationList');
+            const searchQuery = document.getElementById('searchBox').value.toLowerCase();
+
+            // Filter locations
+            let filteredLocations = locations.filter(loc => {
+                if (loc.type === 'school' && !showSchools) return false;
+                if (loc.type === 'shop' && !showShops) return false;
+
+                // Apply search filter
+                if (searchQuery) {
+                    const searchableText = `${loc.name} ${loc.address} ${loc.contactPerson} ${loc.programType || ''}`.toLowerCase();
+                    if (!searchableText.includes(searchQuery)) return false;
+                }
+
+                return true;
+            });
+
+            if (filteredLocations.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="no-data">
+                        <h3>No locations found</h3>
+                        <p>${locations.length === 0 ? 'Add locations via the Admin Panel' : 'Try adjusting your filters'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by name
+            filteredLocations.sort((a, b) => a.name.localeCompare(b.name));
+
+            // Generate HTML
+            listContainer.innerHTML = filteredLocations.map(loc => {
+                const typeClass = loc.type === 'school' ? 'school' : 'shop';
+                const typeLabel = loc.type === 'school' ? 'School' : 'Shop';
+
+                return `
+                    <div class="location-item ${typeClass}" onclick="focusLocation(${loc.id})">
+                        <span class="type-badge ${typeClass}">${typeLabel}</span>
+                        <h3>${loc.name}</h3>
+                        ${loc.address ? `<p>📍 ${loc.address}</p>` : ''}
+                        ${loc.type === 'school' && loc.programType ? `<p>🎓 ${loc.programType}</p>` : ''}
+                        <div class="contact-info">
+                            ${loc.contactPerson ? `<p>👤 ${loc.contactPerson}</p>` : ''}
+                            ${loc.phone ? `<p>📞 ${loc.phone}</p>` : ''}
+                            ${loc.email ? `<p>✉️ ${loc.email}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Focus on a specific location
+        window.focusLocation = function(locationId) {
+            const location = locations.find(loc => loc.id === locationId);
+            if (!location || !location.lat || !location.lng) return;
+
+            map.setView([location.lat, location.lng], 15);
+
+            // Find and open the marker popup
+            markers.forEach(marker => {
+                const markerLatLng = marker.getLatLng();
+                if (markerLatLng.lat === location.lat && markerLatLng.lng === location.lng) {
+                    marker.openPopup();
+                }
+            });
+        };
+
+        // Event listeners
+        document.getElementById('filterSchools').addEventListener('click', function() {
+            showSchools = !showSchools;
+            this.classList.toggle('active');
+            updateMap();
+            updateLocationList();
+        });
+
+        document.getElementById('filterShops').addEventListener('click', function() {
+            showShops = !showShops;
+            this.classList.toggle('active');
+            updateMap();
+            updateLocationList();
+        });
+
+        document.getElementById('heatmapToggle').addEventListener('change', function() {
+            updateHeatmap();
+            // Hide/show markers when heatmap is toggled
+            if (this.checked) {
+                if (markerClusterGroup) map.removeLayer(markerClusterGroup);
+                markers.forEach(marker => map.removeLayer(marker));
+            } else {
+                updateMap();
+            }
+        });
+
+        document.getElementById('clusterToggle').addEventListener('change', function() {
+            useclustering = this.checked;
+            updateMap();
+        });
+
+        document.getElementById('searchBox').addEventListener('input', function() {
+            updateLocationList();
+        });
+
+        // Initialize
+        loadLocations();
+    </script>
+</body>
+</html>

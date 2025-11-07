@@ -1,0 +1,11 @@
+type,name,address,lat,lng,programType,contactPerson,phone,email,website
+school,Spartan College of Aeronautics,"8820 E Pine St, Tulsa, OK 74115",36.1292,-95.8753,A&P,John Smith,(918) 831-5111,admissions@spartan.edu,https://spartan.edu
+school,Aviation Institute of Maintenance,"3800 N Wilke Rd, Arlington Heights, IL 60004",42.0904,-87.9540,Avionics,Sarah Johnson,(847) 590-5290,info@aviationmaintenance.edu,https://aviationmaintenance.edu
+school,Redstone College,"10851 W 120th Ave, Broomfield, CO 80021",39.9144,-105.0973,A&P,Mike Davis,(303) 466-1714,info@redstone.edu,https://redstone.edu
+school,Pittsburgh Institute of Aeronautics,"5 Allegheny County Airport, West Mifflin, PA 15122",40.3547,-79.9300,A&P,Lisa Brown,(412) 346-2100,admissions@pia.edu,https://pia.edu
+school,National Aviation Academy,"18 Minuteman Causeway, Cocoa Beach, FL 32931",28.3200,-80.6076,A&P,Robert Wilson,(321) 504-3200,info@naa.edu,https://naa.edu
+shop,Duncan Aviation,"3701 Aviation Rd, Lincoln, NE 68524",40.8507,-96.7589,,Mary Anderson,(402) 475-2611,sales@duncanaviation.com,https://duncanaviation.com
+shop,StandardAero,"3930 E Ray Rd, Phoenix, AZ 85044",33.3233,-111.9817,,James Martinez,(480) 543-3000,info@standardaero.com,https://standardaero.com
+shop,Gulfstream Aerospace,"500 Gulfstream Rd, Savannah, GA 31408",32.1276,-81.2024,,Patricia Garcia,(912) 965-3000,info@gulfstream.com,https://gulfstream.com
+shop,Textron Aviation,"1 Cessna Blvd, Wichita, KS 67215",37.6489,-97.4297,,David Lee,(316) 517-6000,info@txtav.com,https://txtav.com
+shop,AAR Corp,"1100 N Wood Dale Rd, Wood Dale, IL 60191",41.9703,-87.9786,,Jennifer Taylor,(630) 227-2000,info@aarcorp.com,https://aarcorp.com
