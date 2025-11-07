@@ -701,11 +701,11 @@
                     <button class="csv-template-btn" onclick="downloadCSVTemplate()">📥 Download CSV Template</button>
                 </div>
 
-                <div class="upload-zone" id="csvUploadZone" onclick="document.getElementById('csvFileInput').click()">
+                <div class="upload-zone" id="csvUploadZone">
                     <div class="upload-icon">📤</div>
                     <h3>Click or Drag & Drop CSV File</h3>
                     <p>Maximum file size: 5MB</p>
-                    <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
+                    <input type="file" id="csvFileInput" accept=".csv,.txt" onchange="handleCSVUpload(event)">
                 </div>
 
                 <div id="csvPreview"></div>
@@ -881,6 +881,9 @@
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
                 loadData();
+
+                // Initialize upload handlers after admin panel is visible
+                setTimeout(initializeUploadHandlers, 100);
             } else {
                 document.getElementById('loginError').textContent = 'Invalid password';
             }
@@ -1088,32 +1091,81 @@
             document.getElementById('programTypeGroup').style.display = 'none';
         }
 
-        // CSV Upload handling
-        document.getElementById('csvUploadZone').addEventListener('dragover', function(e) {
-            e.preventDefault();
-            this.classList.add('dragover');
-        });
+        // CSV Upload handling - Initialize after DOM is ready
+        function initializeUploadHandlers() {
+            const csvUploadZone = document.getElementById('csvUploadZone');
+            const csvFileInput = document.getElementById('csvFileInput');
 
-        document.getElementById('csvUploadZone').addEventListener('dragleave', function() {
-            this.classList.remove('dragover');
-        });
-
-        document.getElementById('csvUploadZone').addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.classList.remove('dragover');
-
-            const file = e.dataTransfer.files[0];
-            if (file && file.name.endsWith('.csv')) {
-                processCSVFile(file);
-            } else {
-                alert('Please upload a CSV file');
+            if (!csvUploadZone || !csvFileInput) {
+                console.error('Upload elements not found:', {
+                    csvUploadZone: !!csvUploadZone,
+                    csvFileInput: !!csvFileInput
+                });
+                return;
             }
-        });
+
+            console.log('Initializing upload handlers...');
+
+            // Drag and drop handlers
+            csvUploadZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.add('dragover');
+                console.log('Drag over');
+            });
+
+            csvUploadZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('dragover');
+                console.log('Drag leave');
+            });
+
+            csvUploadZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('dragover');
+                console.log('File dropped');
+
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    console.log('Dropped file:', file.name, file.type, file.size);
+                    if (file.name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/vnd.ms-excel') {
+                        console.log('Processing dropped CSV file:', file.name);
+                        processCSVFile(file);
+                    } else {
+                        alert('Please upload a CSV file (file must end with .csv)\nFile type detected: ' + file.type);
+                    }
+                }
+            });
+
+            // Click handler
+            csvUploadZone.addEventListener('click', function(e) {
+                // Prevent clicking on the file input itself
+                if (e.target === csvFileInput) {
+                    return;
+                }
+                console.log('Upload zone clicked, opening file dialog');
+                csvFileInput.click();
+            });
+
+            // Add a visual indicator that handlers are ready
+            csvUploadZone.style.cursor = 'pointer';
+            console.log('✅ Upload handlers initialized successfully');
+        }
 
         function handleCSVUpload(event) {
+            console.log('handleCSVUpload called');
             const file = event.target.files[0];
             if (file) {
+                console.log('File selected:', file.name, 'Size:', file.size, 'bytes');
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File is too large. Maximum size is 5MB.');
+                    return;
+                }
                 processCSVFile(file);
+            } else {
+                console.log('No file selected');
             }
         }
 
