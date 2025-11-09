@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARINC 429 Bus Oscilloscope Diagnostic Simulator - AEA Training</title>
+    <style>
+        :root {
+            --primary-color: #00ff41;
+            --secondary-color: #ff00ff;
+            --tertiary-color: #00d4ff;
+            --background-dark: #0a0e1a;
+            --panel-bg: #1a1f35;
+            --border-color: #2d3350;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --warning-color: #ff6b35;
+            --success-color: #00ff41;
+            --scope-screen: #001a0a;
+            --grid-color: #003311;
+            --trace-ch1: #00ff41;
+            --trace-ch2: #ffff00;
+            --trigger-color: #ff00ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--background-dark) 0%, #0f1420 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--panel-bg);
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--tertiary-color);
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .oscilloscope-body {
+            background: linear-gradient(145deg, #2a2f45 0%, #1a1f35 100%);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .scope-screen-container {
+            background: var(--scope-screen);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: inset 0 0 40px rgba(0, 255, 65, 0.1),
+                        0 0 20px rgba(0, 0, 0, 0.5);
+            border: 3px solid #002200;
+        }
+
+        #oscilloscope-canvas {
+            width: 100%;
+            height: 500px;
+            display: block;
+            border-radius: 5px;
+            cursor: crosshair;
+            background: var(--scope-screen);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .control-group h3 {
+            color: var(--tertiary-color);
+            font-size: 0.9em;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-item {
+            margin-bottom: 15px;
+        }
+
+        .control-item label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-item select,
+        .control-item input[type="range"] {
+            width: 100%;
+            background: var(--background-dark);
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .control-item input[type="range"] {
+            padding: 0;
+            height: 30px;
+        }
+
+        .value-display {
+            display: inline-block;
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-left: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: linear-gradient(145deg, var(--primary-color), #00cc33);
+            color: var(--background-dark);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0, 255, 65, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 65, 0.5);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: linear-gradient(145deg, var(--tertiary-color), #0099cc);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        button.secondary:hover {
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.5);
+        }
+
+        button.danger {
+            background: linear-gradient(145deg, var(--warning-color), #cc5528);
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        button.danger:hover {
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-indicator.running {
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        .status-indicator.stopped {
+            background: var(--warning-color);
+            box-shadow: 0 0 10px var(--warning-color);
+        }
+
+        .status-indicator.triggered {
+            background: var(--trigger-color);
+            box-shadow: 0 0 10px var(--trigger-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .info-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 255, 65, 0.05);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 5px;
+        }
+
+        .info-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .info-section p, .info-section ul {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .info-section ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .info-section li {
+            margin-bottom: 5px;
+        }
+
+        .warning-box {
+            background: rgba(255, 107, 53, 0.1);
+            border-left: 4px solid var(--warning-color);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .warning-box h3 {
+            color: var(--warning-color);
+            margin-bottom: 10px;
+        }
+
+        .success-box {
+            background: rgba(0, 255, 65, 0.1);
+            border-left: 4px solid var(--success-color);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-box.show {
+            display: block;
+        }
+
+        .success-box h3 {
+            color: var(--success-color);
+            margin-bottom: 10px;
+        }
+
+        .measurement-display {
+            background: var(--background-dark);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .measurement-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .measurement-label {
+            color: var(--text-secondary);
+        }
+
+        .measurement-value {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .diagnostic-panel {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .diagnostic-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .diagnostic-panel::-webkit-scrollbar-track {
+            background: var(--background-dark);
+            border-radius: 4px;
+        }
+
+        .diagnostic-panel::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .hint-section {
+            background: rgba(0, 212, 255, 0.05);
+            border-left: 4px solid var(--tertiary-color);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .hint-section h4 {
+            color: var(--tertiary-color);
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .hint-section p {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .system-time {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            color: var(--primary-color);
+            text-align: center;
+            padding: 10px;
+            background: var(--background-dark);
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .channel-legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .channel-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 5px;
+        }
+
+        .channel-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .channel-color.ch1 {
+            background: var(--trace-ch1);
+            box-shadow: 0 0 8px var(--trace-ch1);
+        }
+
+        .channel-color.ch2 {
+            background: var(--trace-ch2);
+            box-shadow: 0 0 8px var(--trace-ch2);
+        }
+
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .trigger-marker {
+            position: absolute;
+            color: var(--trigger-color);
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .scope-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: var(--background-dark);
+            border-radius: 5px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .scope-status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.active {
+            background: var(--success-color);
+            color: var(--background-dark);
+        }
+
+        .badge.inactive {
+            background: var(--text-secondary);
+            color: var(--background-dark);
+        }
+
+        .badge.fault {
+            background: var(--warning-color);
+            color: var(--background-dark);
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔬 ARINC 429 Bus Oscilloscope Diagnostic Simulator</h1>
+            <p class="subtitle">Advanced Troubleshooting: Intermittent Communication Failure Analysis</p>
+            <div class="channel-legend">
+                <div class="channel-item">
+                    <div class="channel-color ch1"></div>
+                    <span>CH1: ARINC 429 HI (A)</span>
+                </div>
+                <div class="channel-item">
+                    <div class="channel-color ch2"></div>
+                    <span>CH2: ARINC 429 LO (B)</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left Panel: System Info -->
+            <div class="panel diagnostic-panel">
+                <h2>📋 System Information</h2>
+
+                <div class="system-time" id="system-time">
+                    System Runtime: 00:00.0
+                </div>
+
+                <div class="info-section">
+                    <h3>Aircraft System</h3>
+                    <p><strong>Bus Type:</strong> ARINC 429</p>
+                    <p><strong>Source:</strong> Air Data Computer (ADC)</p>
+                    <p><strong>Data Type:</strong> Altitude (Label 203)</p>
+                    <p><strong>Data Rate:</strong> 100 kbit/s (High Speed)</p>
+                    <p><strong>Word Length:</strong> 32 bits</p>
+                    <p><strong>Update Rate:</strong> 50 Hz (20ms intervals)</p>
+                </div>
+
+                <div class="warning-box">
+                    <h3>⚠️ Reported Fault</h3>
+                    <p>Intermittent loss of altitude data from ADC. Flight crew reports occasional altitude display dropouts. Fault appears after system warm-up.</p>
+                </div>
+
+                <div class="info-section">
+                    <h3>ARINC 429 Signal Specs</h3>
+                    <ul>
+                        <li><strong>Differential Voltage:</strong> ±10V nominal</li>
+                        <li><strong>HI (A) Line:</strong> +10V (logic high)</li>
+                        <li><strong>LO (B) Line:</strong> -10V (logic low)</li>
+                        <li><strong>NULL State:</strong> Both lines at 0V</li>
+                        <li><strong>Bit Rate:</strong> 100 kbps ±1%</li>
+                        <li><strong>Rise/Fall Time:</strong> 1.5µs typical</li>
+                    </ul>
+                </div>
+
+                <div class="hint-section">
+                    <h4>💡 Diagnostic Strategy</h4>
+                    <p>Use single-shot trigger mode to capture transient faults. Monitor both differential lines. Look for loss of differential voltage or abnormal signal states.</p>
+                </div>
+
+                <div class="hint-section">
+                    <h4>🎯 Your Mission</h4>
+                    <p>Configure the oscilloscope to capture the intermittent fault, identify the failure mode, and determine the root cause. The fault is subtle and requires proper trigger setup.</p>
+                </div>
+
+                <div class="success-box" id="success-message">
+                    <h3>✅ Excellent Diagnosis!</h3>
+                    <p id="success-text"></p>
+                </div>
+            </div>
+
+            <!-- Center Panel: Oscilloscope -->
+            <div class="panel">
+                <div class="oscilloscope-body">
+                    <div class="scope-screen-container">
+                        <canvas id="oscilloscope-canvas"></canvas>
+                    </div>
+
+                    <div class="controls-grid">
+                        <!-- Timebase Controls -->
+                        <div class="control-group">
+                            <h3>⏱️ Timebase</h3>
+                            <div class="control-item">
+                                <label>Time/Div</label>
+                                <select id="timebase">
+                                    <option value="0.00001">10 µs/div</option>
+                                    <option value="0.00002">20 µs/div</option>
+                                    <option value="0.00005">50 µs/div</option>
+                                    <option value="0.0001">100 µs/div</option>
+                                    <option value="0.0002">200 µs/div</option>
+                                    <option value="0.0005">500 µs/div</option>
+                                    <option value="0.001">1 ms/div</option>
+                                    <option value="0.002">2 ms/div</option>
+                                    <option value="0.005" selected>5 ms/div</option>
+                                    <option value="0.01">10 ms/div</option>
+                                    <option value="0.02">20 ms/div</option>
+                                    <option value="0.05">50 ms/div</option>
+                                    <option value="0.1">100 ms/div</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Channel 1 Controls -->
+                        <div class="control-group">
+                            <h3 style="color: var(--trace-ch1);">📊 Channel 1 (HI)</h3>
+                            <div class="control-item">
+                                <label>Volts/Div</label>
+                                <select id="ch1-volts">
+                                    <option value="1">1 V/div</option>
+                                    <option value="2">2 V/div</option>
+                                    <option value="5" selected>5 V/div</option>
+                                    <option value="10">10 V/div</option>
+                                    <option value="20">20 V/div</option>
+                                </select>
+                            </div>
+                            <div class="control-item">
+                                <label>Position</label>
+                                <input type="range" id="ch1-position" min="-100" max="100" value="25" step="1">
+                                <span class="value-display" id="ch1-pos-val">+25</span>
+                            </div>
+                        </div>
+
+                        <!-- Channel 2 Controls -->
+                        <div class="control-group">
+                            <h3 style="color: var(--trace-ch2);">📊 Channel 2 (LO)</h3>
+                            <div class="control-item">
+                                <label>Volts/Div</label>
+                                <select id="ch2-volts">
+                                    <option value="1">1 V/div</option>
+                                    <option value="2">2 V/div</option>
+                                    <option value="5" selected>5 V/div</option>
+                                    <option value="10">10 V/div</option>
+                                    <option value="20">20 V/div</option>
+                                </select>
+                            </div>
+                            <div class="control-item">
+                                <label>Position</label>
+                                <input type="range" id="ch2-position" min="-100" max="100" value="-25" step="1">
+                                <span class="value-display" id="ch2-pos-val">-25</span>
+                            </div>
+                        </div>
+
+                        <!-- Trigger Controls -->
+                        <div class="control-group">
+                            <h3 style="color: var(--trigger-color);">🎯 Trigger</h3>
+                            <div class="control-item">
+                                <label>Source</label>
+                                <select id="trigger-source">
+                                    <option value="ch1">Channel 1</option>
+                                    <option value="ch2">Channel 2</option>
+                                </select>
+                            </div>
+                            <div class="control-item">
+                                <label>Mode</label>
+                                <select id="trigger-mode">
+                                    <option value="auto">Auto</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="single">Single Shot</option>
+                                </select>
+                            </div>
+                            <div class="control-item">
+                                <label>Edge</label>
+                                <select id="trigger-edge">
+                                    <option value="rising">Rising</option>
+                                    <option value="falling">Falling</option>
+                                </select>
+                            </div>
+                            <div class="control-item">
+                                <label>Level</label>
+                                <input type="range" id="trigger-level" min="-20" max="20" value="5" step="0.5">
+                                <span class="value-display" id="trigger-level-val">5.0 V</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="btn-run-stop">▶️ RUN</button>
+                        <button id="btn-single" class="secondary">⚡ SINGLE</button>
+                        <button id="btn-reset" class="danger">🔄 RESET SYSTEM</button>
+                        <button id="btn-auto-scale" class="secondary">📏 AUTO SCALE</button>
+                    </div>
+
+                    <div class="scope-status-bar">
+                        <div class="scope-status-item">
+                            <span class="status-indicator stopped" id="scope-status-led"></span>
+                            <span id="scope-status-text">STOPPED</span>
+                        </div>
+                        <div class="scope-status-item">
+                            <span>Trigger:</span>
+                            <span class="badge inactive" id="trigger-status">READY</span>
+                        </div>
+                        <div class="scope-status-item">
+                            <span>Fault:</span>
+                            <span class="badge inactive" id="fault-status">NONE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Measurements & Analysis -->
+            <div class="panel diagnostic-panel">
+                <h2>📈 Measurements & Analysis</h2>
+
+                <div class="measurement-display">
+                    <h3 style="color: var(--trace-ch1); margin-bottom: 10px;">Channel 1 (HI Line)</h3>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Vmax:</span>
+                        <span class="measurement-value" id="ch1-vmax">0.0 V</span>
+                    </div>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Vmin:</span>
+                        <span class="measurement-value" id="ch1-vmin">0.0 V</span>
+                    </div>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Vpp:</span>
+                        <span class="measurement-value" id="ch1-vpp">0.0 V</span>
+                    </div>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Frequency:</span>
+                        <span class="measurement-value" id="ch1-freq">0 Hz</span>
+                    </div>
+                </div>
+
+                <div class="measurement-display">
+                    <h3 style="color: var(--trace-ch2); margin-bottom: 10px;">Channel 2 (LO Line)</h3>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Vmax:</span>
+                        <span class="measurement-value" id="ch2-vmax">0.0 V</span>
+                    </div>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Vmin:</span>
+                        <span class="measurement-value" id="ch2-vmin">0.0 V</span>
+                    </div>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Vpp:</span>
+                        <span class="measurement-value" id="ch2-vpp">0.0 V</span>
+                    </div>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Frequency:</span>
+                        <span class="measurement-value" id="ch2-freq">0 Hz</span>
+                    </div>
+                </div>
+
+                <div class="measurement-display">
+                    <h3 style="color: var(--tertiary-color); margin-bottom: 10px;">Differential Analysis</h3>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Diff Voltage:</span>
+                        <span class="measurement-value" id="diff-voltage">0.0 V</span>
+                    </div>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Signal Quality:</span>
+                        <span class="measurement-value" id="signal-quality">GOOD</span>
+                    </div>
+                    <div class="measurement-row">
+                        <span class="measurement-label">Data Rate:</span>
+                        <span class="measurement-value" id="data-rate">100 kbps</span>
+                    </div>
+                </div>
+
+                <div class="hint-section">
+                    <h4>🔍 Analysis Tips</h4>
+                    <p><strong>Normal ARINC 429:</strong> HI and LO lines should be complementary (±10V differential). Look for periods where both lines drop to 0V.</p>
+                </div>
+
+                <div class="hint-section">
+                    <h4>⚙️ Recommended Settings</h4>
+                    <p><strong>Timebase:</strong> 5-20 ms/div to capture transient<br>
+                    <strong>Trigger Mode:</strong> Single Shot<br>
+                    <strong>Trigger Level:</strong> ~5V on falling edge<br>
+                    <strong>Wait:</strong> System warm-up (30+ seconds)</p>
+                </div>
+
+                <div class="hint-section">
+                    <h4>🎓 Common Causes</h4>
+                    <ul style="margin-left: 15px; margin-top: 8px; color: var(--text-secondary); font-size: 0.9em;">
+                        <li>Cold solder joints</li>
+                        <li>Intermittent connections</li>
+                        <li>Cable degradation</li>
+                        <li>Connector contamination</li>
+                        <li>EMI/RFI interference</li>
+                    </ul>
+                </div>
+
+                <div class="button-group">
+                    <button id="btn-diagnose" class="secondary">🔬 SUBMIT DIAGNOSIS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // ARINC 429 OSCILLOSCOPE SIMULATOR
+        // High-fidelity simulation of intermittent bus communication failure
+        // ============================================================================
+
+        class ARINC429Simulator {
+            constructor() {
+                // System timing
+                this.systemStartTime = Date.now();
+                this.systemTime = 0; // seconds since power-on
+                this.faultStartTime = 30; // fault begins 30 seconds after power-on
+                this.faultActive = false;
+                this.lastFaultTime = 0;
+                this.faultInterval = 5; // fault occurs every 5 seconds
+                this.faultDuration = 0.05; // 50 milliseconds
+
+                // ARINC 429 parameters
+                this.dataRate = 100000; // 100 kbit/s
+                this.bitPeriod = 1 / this.dataRate; // seconds per bit
+                this.wordLength = 32; // bits
+                this.wordPeriod = this.bitPeriod * this.wordLength;
+                this.updateRate = 50; // Hz (20ms between words)
+                this.updatePeriod = 1 / this.updateRate;
+
+                // Signal state
+                this.currentAltitude = 10000; // feet
+                this.transmitting = true;
+
+                // Fault detection
+                this.faultCaptured = false;
+                this.diagnosisSubmitted = false;
+            }
+
+            getSystemTime() {
+                return (Date.now() - this.systemStartTime) / 1000;
+            }
+
+            updateSystemTime() {
+                this.systemTime = this.getSystemTime();
+
+                // Check for fault condition
+                if (this.systemTime >= this.faultStartTime) {
+                    const timeSinceStart = this.systemTime - this.faultStartTime;
+                    const faultCycle = timeSinceStart % this.faultInterval;
+                    this.faultActive = faultCycle < this.faultDuration;
+                } else {
+                    this.faultActive = false;
+                }
+            }
+
+            // Generate ARINC 429 word (simplified)
+            generateWord(altitude) {
+                // Simplified: just create a bit pattern
+                // Real ARINC 429 has Label, SDI, Data, SSM, Parity
+                const altitudeBCD = Math.floor(altitude); // Simplified encoding
+                return altitudeBCD.toString(2).padStart(32, '0');
+            }
+
+            // Get signal voltage at time t for HI line
+            getHiVoltage(t) {
+                if (!this.transmitting) return 0;
+
+                // If fault is active, return 0 (high impedance/open circuit)
+                if (this.faultActive) return 0;
+
+                // Generate ARINC 429 signal pattern
+                const wordTime = t % this.updatePeriod;
+
+                if (wordTime > this.wordPeriod) {
+                    // NULL state between words
+                    return 0;
+                }
+
+                const word = this.generateWord(this.currentAltitude);
+                const bitIndex = Math.floor(wordTime / this.bitPeriod);
+
+                if (bitIndex >= 32) return 0;
+
+                const bit = word[bitIndex] === '1';
+
+                // ARINC 429: HI line is +10V for logic 1, 0V for logic 0
+                return bit ? 10 : 0;
+            }
+
+            // Get signal voltage at time t for LO line
+            getLoVoltage(t) {
+                if (!this.transmitting) return 0;
+
+                // If fault is active, return 0 (high impedance/open circuit)
+                if (this.faultActive) return 0;
+
+                // Generate ARINC 429 signal pattern
+                const wordTime = t % this.updatePeriod;
+
+                if (wordTime > this.wordPeriod) {
+                    // NULL state between words
+                    return 0;
+                }
+
+                const word = this.generateWord(this.currentAltitude);
+                const bitIndex = Math.floor(wordTime / this.bitPeriod);
+
+                if (bitIndex >= 32) return 0;
+
+                const bit = word[bitIndex] === '1';
+
+                // ARINC 429: LO line is -10V for logic 1, 0V for logic 0
+                return bit ? -10 : 0;
+            }
+
+            reset() {
+                this.systemStartTime = Date.now();
+                this.systemTime = 0;
+                this.faultActive = false;
+                this.faultCaptured = false;
+                this.currentAltitude = 10000 + Math.random() * 5000; // Varying altitude
+            }
+        }
+
+        // ============================================================================
+        // OSCILLOSCOPE DISPLAY
+        // ============================================================================
+
+        class Oscilloscope {
+            constructor(canvas, arinc429) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.arinc429 = arinc429;
+
+                // Display parameters
+                this.width = canvas.width;
+                this.height = canvas.height;
+                this.divX = 10; // horizontal divisions
+                this.divY = 8;  // vertical divisions
+
+                // Acquisition parameters
+                this.timePerDiv = 0.005; // 5 ms/div
+                this.ch1VoltsPerDiv = 5;
+                this.ch2VoltsPerDiv = 5;
+                this.ch1Position = 25; // percentage
+                this.ch2Position = -25;
+
+                // Trigger parameters
+                this.triggerSource = 'ch1';
+                this.triggerMode = 'auto';
+                this.triggerEdge = 'falling';
+                this.triggerLevel = 5;
+                this.triggered = false;
+                this.triggerTime = 0;
+
+                // Running state
+                this.running = false;
+                this.singleShot = false;
+                this.captureComplete = false;
+
+                // Data buffers
+                this.ch1Data = [];
+                this.ch2Data = [];
+                this.timeData = [];
+                this.sampleRate = 1000000; // 1 MHz sampling
+
+                // Display offset
+                this.timeOffset = 0;
+
+                this.setupCanvas();
+            }
+
+            setupCanvas() {
+                // Set canvas size with device pixel ratio for crisp display
+                const dpr = window.devicePixelRatio || 1;
+                const rect = this.canvas.getBoundingClientRect();
+
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+
+                this.ctx.scale(dpr, dpr);
+
+                this.width = rect.width;
+                this.height = rect.height;
+            }
+
+            drawGrid() {
+                const ctx = this.ctx;
+                ctx.strokeStyle = getComputedStyle(document.documentElement)
+                    .getPropertyValue('--grid-color').trim();
+                ctx.lineWidth = 1;
+
+                const divWidth = this.width / this.divX;
+                const divHeight = this.height / this.divY;
+
+                // Draw vertical lines
+                for (let i = 0; i <= this.divX; i++) {
+                    const x = i * divWidth;
+                    ctx.beginPath();
+                    if (i === this.divX / 2) {
+                        ctx.lineWidth = 2; // Center line
+                    } else {
+                        ctx.lineWidth = 1;
+                    }
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, this.height);
+                    ctx.stroke();
+
+                    // Draw subdivision ticks
+                    if (i < this.divX) {
+                        for (let j = 1; j < 5; j++) {
+                            const tickX = x + (divWidth / 5) * j;
+                            ctx.beginPath();
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(tickX, this.height / 2 - 5);
+                            ctx.lineTo(tickX, this.height / 2 + 5);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // Draw horizontal lines
+                for (let i = 0; i <= this.divY; i++) {
+                    const y = i * divHeight;
+                    ctx.beginPath();
+                    if (i === this.divY / 2) {
+                        ctx.lineWidth = 2; // Center line
+                    } else {
+                        ctx.lineWidth = 1;
+                    }
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(this.width, y);
+                    ctx.stroke();
+
+                    // Draw subdivision ticks
+                    if (i < this.divY) {
+                        for (let j = 1; j < 5; j++) {
+                            const tickY = y + (divHeight / 5) * j;
+                            ctx.beginPath();
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(this.width / 2 - 5, tickY);
+                            ctx.lineTo(this.width / 2 + 5, tickY);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            drawTriggerMarker() {
+                if (!this.triggered) return;
+
+                const ctx = this.ctx;
+                const triggerColor = getComputedStyle(document.documentElement)
+                    .getPropertyValue('--trigger-color').trim();
+
+                // Draw trigger level line
+                const y = this.voltageToY(this.triggerLevel,
+                    this.triggerSource === 'ch1' ? this.ch1VoltsPerDiv : this.ch2VoltsPerDiv,
+                    this.triggerSource === 'ch1' ? this.ch1Position : this.ch2Position);
+
+                ctx.strokeStyle = triggerColor;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(this.width, y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw trigger point marker
+                const triggerX = this.width * 0.1; // 10% from left
+                ctx.fillStyle = triggerColor;
+                ctx.beginPath();
+                ctx.moveTo(triggerX, y - 8);
+                ctx.lineTo(triggerX + 8, y);
+                ctx.lineTo(triggerX, y + 8);
+                ctx.fill();
+
+                // Label
+                ctx.fillStyle = triggerColor;
+                ctx.font = 'bold 12px monospace';
+                ctx.fillText('T', triggerX + 12, y + 4);
+            }
+
+            voltageToY(voltage, voltsPerDiv, position) {
+                const centerY = this.height / 2;
+                const divHeight = this.height / this.divY;
+                const positionOffset = (position / 100) * this.height;
+                const voltageOffset = (voltage / voltsPerDiv) * divHeight;
+                return centerY - voltageOffset - positionOffset;
+            }
+
+            timeToX(time) {
+                const totalTime = this.timePerDiv * this.divX;
+                const relativeTime = time - this.timeOffset;
+                return (relativeTime / totalTime) * this.width;
+            }
+
+            acquire() {
+                this.ch1Data = [];
+                this.ch2Data = [];
+                this.timeData = [];
+
+                const totalTime = this.timePerDiv * this.divX;
+                const samplePeriod = 1 / this.sampleRate;
+                const numSamples = Math.floor(totalTime / samplePeriod);
+
+                const currentTime = this.arinc429.getSystemTime();
+                let startTime = currentTime - totalTime * 0.1; // Start 10% before trigger
+
+                // Check for trigger
+                if (this.triggerMode !== 'auto' || this.singleShot) {
+                    const triggerFound = this.findTrigger(currentTime, totalTime);
+                    if (triggerFound !== null) {
+                        this.triggered = true;
+                        this.triggerTime = triggerFound;
+                        startTime = triggerFound - totalTime * 0.1;
+                    } else if (this.triggerMode === 'single' || this.singleShot) {
+                        // Don't update display if waiting for trigger
+                        return;
+                    }
+                }
+
+                this.timeOffset = startTime;
+
+                // Sample data
+                for (let i = 0; i < numSamples; i++) {
+                    const t = startTime + i * samplePeriod;
+                    this.timeData.push(t);
+                    this.ch1Data.push(this.arinc429.getHiVoltage(t));
+                    this.ch2Data.push(this.arinc429.getLoVoltage(t));
+                }
+
+                // Check if fault was captured
+                if (this.triggered && this.arinc429.systemTime > this.arinc429.faultStartTime) {
+                    const hasFault = this.ch1Data.some((v, i) =>
+                        Math.abs(v) < 1 && Math.abs(this.ch2Data[i]) < 1 && i > 10 && i < this.ch1Data.length - 10
+                    );
+                    if (hasFault) {
+                        this.arinc429.faultCaptured = true;
+                        document.getElementById('fault-status').textContent = 'CAPTURED';
+                        document.getElementById('fault-status').className = 'badge fault';
+                    }
+                }
+
+                if (this.singleShot && this.triggered) {
+                    this.captureComplete = true;
+                    this.running = false;
+                    this.singleShot = false;
+                }
+            }
+
+            findTrigger(currentTime, totalTime) {
+                // Look for trigger condition in recent time window
+                const searchStart = currentTime - totalTime;
+                const searchEnd = currentTime;
+                const searchSamples = 1000;
+                const dt = (searchEnd - searchStart) / searchSamples;
+
+                let prevVoltage = this.triggerSource === 'ch1' ?
+                    this.arinc429.getHiVoltage(searchStart) :
+                    this.arinc429.getLoVoltage(searchStart);
+
+                for (let i = 1; i < searchSamples; i++) {
+                    const t = searchStart + i * dt;
+                    const voltage = this.triggerSource === 'ch1' ?
+                        this.arinc429.getHiVoltage(t) :
+                        this.arinc429.getLoVoltage(t);
+
+                    // Check for trigger edge
+                    if (this.triggerEdge === 'rising') {
+                        if (prevVoltage < this.triggerLevel && voltage >= this.triggerLevel) {
+                            return t;
+                        }
+                    } else {
+                        if (prevVoltage > this.triggerLevel && voltage <= this.triggerLevel) {
+                            return t;
+                        }
+                    }
+
+                    prevVoltage = voltage;
+                }
+
+                return null;
+            }
+
+            drawTrace(data, color, voltsPerDiv, position) {
+                if (data.length < 2) return;
+
+                const ctx = this.ctx;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = color;
+
+                ctx.beginPath();
+
+                for (let i = 0; i < data.length; i++) {
+                    const x = this.timeToX(this.timeData[i]);
+                    const y = this.voltageToY(data[i], voltsPerDiv, position);
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            calculateMeasurements() {
+                if (this.ch1Data.length === 0) return;
+
+                // Channel 1 measurements
+                const ch1Max = Math.max(...this.ch1Data);
+                const ch1Min = Math.min(...this.ch1Data);
+                const ch1Pp = ch1Max - ch1Min;
+
+                // Channel 2 measurements
+                const ch2Max = Math.max(...this.ch2Data);
+                const ch2Min = Math.min(...this.ch2Data);
+                const ch2Pp = ch2Max - ch2Min;
+
+                // Estimate frequency (count zero crossings)
+                let crossings = 0;
+                for (let i = 1; i < this.ch1Data.length; i++) {
+                    if ((this.ch1Data[i-1] < 5 && this.ch1Data[i] >= 5) ||
+                        (this.ch1Data[i-1] > 5 && this.ch1Data[i] <= 5)) {
+                        crossings++;
+                    }
+                }
+                const totalTime = this.timePerDiv * this.divX;
+                const frequency = (crossings / 2) / totalTime;
+
+                // Update display
+                document.getElementById('ch1-vmax').textContent = ch1Max.toFixed(1) + ' V';
+                document.getElementById('ch1-vmin').textContent = ch1Min.toFixed(1) + ' V';
+                document.getElementById('ch1-vpp').textContent = ch1Pp.toFixed(1) + ' V';
+                document.getElementById('ch1-freq').textContent = (frequency / 1000).toFixed(1) + ' kHz';
+
+                document.getElementById('ch2-vmax').textContent = ch2Max.toFixed(1) + ' V';
+                document.getElementById('ch2-vmin').textContent = ch2Min.toFixed(1) + ' V';
+                document.getElementById('ch2-vpp').textContent = ch2Pp.toFixed(1) + ' V';
+                document.getElementById('ch2-freq').textContent = (frequency / 1000).toFixed(1) + ' kHz';
+
+                // Differential measurements
+                const diffVoltage = Math.abs(ch1Max - ch2Min);
+                document.getElementById('diff-voltage').textContent = diffVoltage.toFixed(1) + ' V';
+
+                // Signal quality assessment
+                let quality = 'GOOD';
+                if (diffVoltage < 15) quality = 'DEGRADED';
+                if (diffVoltage < 5) quality = 'FAULT';
+                document.getElementById('signal-quality').textContent = quality;
+            }
+
+            draw() {
+                // Clear canvas
+                this.ctx.fillStyle = getComputedStyle(document.documentElement)
+                    .getPropertyValue('--scope-screen').trim();
+                this.ctx.fillRect(0, 0, this.width, this.height);
+
+                // Draw grid
+                this.drawGrid();
+
+                // Draw trigger marker
+                this.drawTriggerMarker();
+
+                // Draw traces
+                if (this.ch1Data.length > 0) {
+                    const ch1Color = getComputedStyle(document.documentElement)
+                        .getPropertyValue('--trace-ch1').trim();
+                    const ch2Color = getComputedStyle(document.documentElement)
+                        .getPropertyValue('--trace-ch2').trim();
+
+                    this.drawTrace(this.ch1Data, ch1Color, this.ch1VoltsPerDiv, this.ch1Position);
+                    this.drawTrace(this.ch2Data, ch2Color, this.ch2VoltsPerDiv, this.ch2Position);
+                }
+            }
+
+            update() {
+                if (this.running || this.singleShot) {
+                    this.acquire();
+                    this.calculateMeasurements();
+                }
+                this.draw();
+            }
+
+            autoScale() {
+                // Sample current signal
+                const currentTime = this.arinc429.getSystemTime();
+                let maxVoltage = 0;
+
+                for (let i = 0; i < 100; i++) {
+                    const t = currentTime + i * 0.0001;
+                    const v1 = Math.abs(this.arinc429.getHiVoltage(t));
+                    const v2 = Math.abs(this.arinc429.getLoVoltage(t));
+                    maxVoltage = Math.max(maxVoltage, v1, v2);
+                }
+
+                // Set appropriate volts/div
+                if (maxVoltage > 20) {
+                    this.ch1VoltsPerDiv = 10;
+                    this.ch2VoltsPerDiv = 10;
+                } else if (maxVoltage > 10) {
+                    this.ch1VoltsPerDiv = 5;
+                    this.ch2VoltsPerDiv = 5;
+                } else {
+                    this.ch1VoltsPerDiv = 2;
+                    this.ch2VoltsPerDiv = 2;
+                }
+
+                document.getElementById('ch1-volts').value = this.ch1VoltsPerDiv;
+                document.getElementById('ch2-volts').value = this.ch2VoltsPerDiv;
+            }
+        }
+
+        // ============================================================================
+        // INITIALIZATION AND UI CONTROLS
+        // ============================================================================
+
+        const canvas = document.getElementById('oscilloscope-canvas');
+        const arinc429 = new ARINC429Simulator();
+        const scope = new Oscilloscope(canvas, arinc429);
+
+        // UI Update Loop
+        function updateUI() {
+            arinc429.updateSystemTime();
+
+            // Update system time display
+            const minutes = Math.floor(arinc429.systemTime / 60);
+            const seconds = Math.floor(arinc429.systemTime % 60);
+            const tenths = Math.floor((arinc429.systemTime % 1) * 10);
+            document.getElementById('system-time').textContent =
+                `System Runtime: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${tenths}`;
+
+            // Update scope status
+            const statusLed = document.getElementById('scope-status-led');
+            const statusText = document.getElementById('scope-status-text');
+
+            if (scope.running) {
+                statusLed.className = 'status-indicator running';
+                statusText.textContent = 'RUNNING';
+            } else if (scope.triggered) {
+                statusLed.className = 'status-indicator triggered';
+                statusText.textContent = 'TRIGGERED';
+            } else {
+                statusLed.className = 'status-indicator stopped';
+                statusText.textContent = 'STOPPED';
+            }
+
+            // Update trigger status
+            const triggerStatus = document.getElementById('trigger-status');
+            if (scope.captureComplete) {
+                triggerStatus.textContent = 'COMPLETE';
+                triggerStatus.className = 'badge active';
+            } else if (scope.triggered) {
+                triggerStatus.textContent = 'TRIGGERED';
+                triggerStatus.className = 'badge active';
+            } else if (scope.triggerMode === 'single' || scope.singleShot) {
+                triggerStatus.textContent = 'ARMED';
+                triggerStatus.className = 'badge active';
+            } else {
+                triggerStatus.textContent = 'AUTO';
+                triggerStatus.className = 'badge inactive';
+            }
+
+            // Update fault status
+            if (arinc429.faultActive && arinc429.systemTime > arinc429.faultStartTime) {
+                document.getElementById('fault-status').textContent = 'ACTIVE';
+                document.getElementById('fault-status').className = 'badge fault';
+            } else if (arinc429.faultCaptured) {
+                document.getElementById('fault-status').textContent = 'CAPTURED';
+                document.getElementById('fault-status').className = 'badge fault';
+            } else {
+                document.getElementById('fault-status').textContent = 'NONE';
+                document.getElementById('fault-status').className = 'badge inactive';
+            }
+
+            scope.update();
+        }
+
+        setInterval(updateUI, 50); // 20 FPS
+
+        // Control Event Handlers
+        document.getElementById('timebase').addEventListener('change', (e) => {
+            scope.timePerDiv = parseFloat(e.target.value);
+        });
+
+        document.getElementById('ch1-volts').addEventListener('change', (e) => {
+            scope.ch1VoltsPerDiv = parseFloat(e.target.value);
+        });
+
+        document.getElementById('ch2-volts').addEventListener('change', (e) => {
+            scope.ch2VoltsPerDiv = parseFloat(e.target.value);
+        });
+
+        document.getElementById('ch1-position').addEventListener('input', (e) => {
+            scope.ch1Position = parseFloat(e.target.value);
+            document.getElementById('ch1-pos-val').textContent =
+                (e.target.value > 0 ? '+' : '') + e.target.value;
+        });
+
+        document.getElementById('ch2-position').addEventListener('input', (e) => {
+            scope.ch2Position = parseFloat(e.target.value);
+            document.getElementById('ch2-pos-val').textContent =
+                (e.target.value > 0 ? '+' : '') + e.target.value;
+        });
+
+        document.getElementById('trigger-source').addEventListener('change', (e) => {
+            scope.triggerSource = e.target.value;
+        });
+
+        document.getElementById('trigger-mode').addEventListener('change', (e) => {
+            scope.triggerMode = e.target.value;
+            scope.triggered = false;
+            scope.captureComplete = false;
+        });
+
+        document.getElementById('trigger-edge').addEventListener('change', (e) => {
+            scope.triggerEdge = e.target.value;
+        });
+
+        document.getElementById('trigger-level').addEventListener('input', (e) => {
+            scope.triggerLevel = parseFloat(e.target.value);
+            document.getElementById('trigger-level-val').textContent = e.target.value + ' V';
+        });
+
+        document.getElementById('btn-run-stop').addEventListener('click', () => {
+            scope.running = !scope.running;
+            scope.singleShot = false;
+            scope.captureComplete = false;
+
+            const btn = document.getElementById('btn-run-stop');
+            if (scope.running) {
+                btn.textContent = '⏸️ STOP';
+                btn.classList.add('danger');
+                scope.triggered = false;
+            } else {
+                btn.textContent = '▶️ RUN';
+                btn.classList.remove('danger');
+            }
+        });
+
+        document.getElementById('btn-single').addEventListener('click', () => {
+            scope.running = true;
+            scope.singleShot = true;
+            scope.triggered = false;
+            scope.captureComplete = false;
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            arinc429.reset();
+            scope.running = false;
+            scope.singleShot = false;
+            scope.triggered = false;
+            scope.captureComplete = false;
+            document.getElementById('btn-run-stop').textContent = '▶️ RUN';
+            document.getElementById('btn-run-stop').classList.remove('danger');
+            document.getElementById('success-message').classList.remove('show');
+            document.getElementById('fault-status').textContent = 'NONE';
+            document.getElementById('fault-status').className = 'badge inactive';
+        });
+
+        document.getElementById('btn-auto-scale').addEventListener('click', () => {
+            scope.autoScale();
+        });
+
+        document.getElementById('btn-diagnose').addEventListener('click', () => {
+            if (!arinc429.faultCaptured) {
+                alert('❌ Fault Not Captured\n\nYou need to capture the intermittent fault before submitting a diagnosis.\n\nRecommendations:\n1. Wait for system warm-up (30+ seconds)\n2. Set trigger mode to Single Shot\n3. Set trigger level around 5V on falling edge\n4. Wait for the fault to occur\n5. Analyze the captured waveform');
+                return;
+            }
+
+            if (arinc429.diagnosisSubmitted) {
+                alert('✅ Diagnosis already submitted!');
+                return;
+            }
+
+            const diagnosis = prompt(
+                '🔬 DIAGNOSTIC ANALYSIS\n\n' +
+                'Based on your oscilloscope observations, what is the most likely root cause?\n\n' +
+                'Enter your diagnosis (e.g., "cold solder joint", "intermittent connection", etc.):'
+            );
+
+            if (!diagnosis) return;
+
+            const correctAnswers = [
+                'cold solder',
+                'solder joint',
+                'intermittent connection',
+                'high impedance',
+                'open circuit',
+                'poor solder'
+            ];
+
+            const isCorrect = correctAnswers.some(ans =>
+                diagnosis.toLowerCase().includes(ans)
+            );
+
+            if (isCorrect) {
+                arinc429.diagnosisSubmitted = true;
+                document.getElementById('success-message').classList.add('show');
+                document.getElementById('success-text').textContent =
+                    'You correctly identified the fault as a cold solder joint on the ADC board! ' +
+                    'The intermittent 50ms dropout every 5 seconds after warm-up is a classic symptom ' +
+                    'of thermal expansion causing a poor solder connection to open. This creates a ' +
+                    'high-impedance state where both differential lines drop to 0V, losing the signal. ' +
+                    'Excellent diagnostic work using single-shot trigger mode!';
+
+                // Notify parent window for gamification
+                if (window.parent && window.parent.completeModule) {
+                    window.parent.completeModule('arinc-429-oscilloscope-simulator.html', 95);
+                }
+            } else {
+                alert(
+                    '❌ Incorrect Diagnosis\n\n' +
+                    'Review the captured waveform more carefully:\n\n' +
+                    '• What happens to BOTH differential lines during the fault?\n' +
+                    '• When does the fault occur (timing pattern)?\n' +
+                    '• What could cause both lines to drop to 0V intermittently?\n' +
+                    '• Why would it start only after system warm-up?\n\n' +
+                    'Hint: Think about temperature-related connection issues.'
+                );
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            scope.setupCanvas();
+        });
+
+        // Initial draw
+        scope.draw();
+    </script>
+</body>
+</html>
