@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aircraft Wire Selection Simulator - Maintenance Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #0f3460 0%, #16213e 100%);
+            padding: 20px 40px;
+            border-bottom: 3px solid #e94560;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #00d9ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            color: #ffa500;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .alert-banner {
+            background: linear-gradient(90deg, #8b0000 0%, #dc143c 100%);
+            padding: 15px 40px;
+            border-bottom: 2px solid #ff4444;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .alert-icon {
+            font-size: 24px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .alert-text {
+            flex: 1;
+            font-weight: 600;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+            min-height: calc(100vh - 200px);
+        }
+
+        .panel {
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .panel-title {
+            font-size: 18px;
+            color: #00d9ff;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0f3460;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .scenario-card {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a4a73 100%);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffa500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .scenario-card:hover {
+            transform: translateX(5px);
+            border-left-color: #00d9ff;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.2);
+        }
+
+        .scenario-card.active {
+            border-left-color: #00ff88;
+            background: linear-gradient(135deg, #2a4a73 0%, #1e3a5f 100%);
+        }
+
+        .scenario-card.completed {
+            border-left-color: #00ff88;
+        }
+
+        .scenario-card.failed {
+            border-left-color: #ff4444;
+        }
+
+        .scenario-number {
+            display: inline-block;
+            background: #0f3460;
+            color: #00d9ff;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .scenario-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffa500;
+            margin-bottom: 10px;
+        }
+
+        .scenario-location {
+            font-size: 13px;
+            color: #b0b0b0;
+            margin-bottom: 12px;
+        }
+
+        .env-params {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .env-item {
+            background: rgba(15, 52, 96, 0.6);
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .env-label {
+            color: #888;
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .env-value {
+            color: #00d9ff;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .wire-database {
+            max-height: calc(100vh - 250px);
+            overflow-y: auto;
+        }
+
+        .search-bar {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            background: rgba(15, 52, 96, 0.6);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #00d9ff;
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+        }
+
+        .filter-tags {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tag {
+            padding: 5px 12px;
+            background: rgba(15, 52, 96, 0.6);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 15px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tag:hover, .filter-tag.active {
+            background: #0f3460;
+            border-color: #00d9ff;
+            color: #00d9ff;
+        }
+
+        .wire-card {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a4a73 100%);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .wire-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.2);
+            border-color: #00d9ff;
+        }
+
+        .wire-card.selected {
+            border: 2px solid #00ff88;
+            background: linear-gradient(135deg, #2a4a73 0%, #1e5f4a 100%);
+        }
+
+        .wire-mil-spec {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            color: #00d9ff;
+            margin-bottom: 8px;
+        }
+
+        .wire-specs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .spec-item {
+            font-size: 11px;
+            color: #b0b0b0;
+        }
+
+        .spec-label {
+            color: #888;
+        }
+
+        .spec-value {
+            color: #ffa500;
+            font-weight: bold;
+        }
+
+        .wire-visual {
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(15, 52, 96, 0.4);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wire-diagram {
+            width: 80px;
+            height: 30px;
+            position: relative;
+        }
+
+        .wire-cross-section {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, #666 0%, #999 50%, #666 100%);
+            border-radius: 4px;
+            position: relative;
+            margin-top: 11px;
+        }
+
+        .wire-shield {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 2px solid #00d9ff;
+            border-radius: 6px;
+        }
+
+        .selection-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .current-scenario-display {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a4a73 100%);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffa500;
+        }
+
+        .selection-area {
+            background: rgba(15, 52, 96, 0.4);
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px dashed rgba(0, 217, 255, 0.3);
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .selection-area.has-selection {
+            border-style: solid;
+            border-color: #00ff88;
+        }
+
+        .no-selection {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .selected-wire-display {
+            width: 100%;
+        }
+
+        .selected-wire-title {
+            font-family: 'Courier New', monospace;
+            color: #00ff88;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .validation-section {
+            background: rgba(15, 52, 96, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .validation-title {
+            font-size: 14px;
+            color: #00d9ff;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .validation-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .validation-item.pending {
+            background: rgba(255, 165, 0, 0.1);
+            color: #ffa500;
+        }
+
+        .validation-item.pass {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+        }
+
+        .validation-item.fail {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #00d9ff 0%, #0099cc 100%);
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(90deg, #00ff88 0%, #00cc6f 100%);
+            color: #1a1a2e;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(90deg, #ff4444 0%, #cc0000 100%);
+            color: white;
+        }
+
+        .consequence-display {
+            background: rgba(139, 0, 0, 0.3);
+            border: 2px solid #ff4444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .consequence-title {
+            color: #ff4444;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .failure-animation {
+            width: 100%;
+            height: 100px;
+            background: rgba(15, 52, 96, 0.6);
+            border-radius: 6px;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .melted-insulation {
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(90deg, #666 0%, #ff4444 50%, #000 100%);
+            position: absolute;
+            top: 40px;
+            animation: melt 2s ease-in-out infinite;
+        }
+
+        @keyframes melt {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.5); filter: blur(2px); }
+        }
+
+        .emi-interference {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .emi-wave {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #00d9ff;
+            top: 50%;
+            animation: emiWave 1s linear infinite;
+        }
+
+        @keyframes emiWave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .regulatory-ref {
+            background: rgba(15, 52, 96, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #ffa500;
+        }
+
+        .ref-title {
+            color: #ffa500;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .ref-content {
+            font-size: 11px;
+            color: #b0b0b0;
+            line-height: 1.6;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a4a73 100%);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #00d9ff;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-header {
+            font-size: 24px;
+            color: #00d9ff;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #0f3460;
+        }
+
+        .report-section {
+            margin-bottom: 25px;
+        }
+
+        .report-section-title {
+            color: #ffa500;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+
+        .report-item {
+            background: rgba(15, 52, 96, 0.4);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 4px solid #0f3460;
+        }
+
+        .report-item.success {
+            border-left-color: #00ff88;
+        }
+
+        .report-item.failure {
+            border-left-color: #ff4444;
+        }
+
+        .score-display {
+            background: linear-gradient(90deg, #0f3460 0%, #16213e 100%);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .score-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #00d9ff;
+        }
+
+        .score-label {
+            font-size: 14px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(15, 52, 96, 0.6);
+            border-radius: 3px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d9ff 0%, #00ff88 100%);
+            transition: width 0.5s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 52, 96, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #0f3460;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00d9ff;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-pending { background: #ffa500; }
+        .status-pass { background: #00ff88; }
+        .status-fail { background: #ff4444; }
+
+        .wire-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .badge-shielded {
+            background: rgba(0, 217, 255, 0.3);
+            color: #00d9ff;
+        }
+
+        .badge-high-temp {
+            background: rgba(255, 68, 68, 0.3);
+            color: #ff4444;
+        }
+
+        .badge-oil-resistant {
+            background: rgba(255, 165, 0, 0.3);
+            color: #ffa500;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        .notification.success {
+            background: linear-gradient(90deg, #00ff88 0%, #00cc6f 100%);
+            color: #1a1a2e;
+        }
+
+        .notification.error {
+            background: linear-gradient(90deg, #ff4444 0%, #cc0000 100%);
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛩️ Aircraft Wire Selection Simulator</h1>
+        <div class="subtitle">Maintenance Training Module - AC 43.13-1B Compliance</div>
+    </div>
+
+    <div class="alert-banner">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-text">
+            <strong>HIGH PRIORITY:</strong> Three aircraft grounded due to improper wire selection.
+            Complete all repairs with correct specifications to return aircraft to service.
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Left Panel: Scenarios -->
+        <div class="panel">
+            <div class="panel-title">📋 Repair Scenarios</div>
+            <div id="scenariosContainer"></div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+            </div>
+
+            <div class="regulatory-ref">
+                <div class="ref-title">📖 AC 43.13-1B Reference</div>
+                <div class="ref-content">
+                    Chapter 11, Section 3: Wire selection must account for temperature rating,
+                    environmental conditions, shielding requirements, and voltage rating.
+                    Always use mil-spec wire for critical aircraft systems.
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Wire Database -->
+        <div class="panel">
+            <div class="panel-title">🔌 Wire Specification Database</div>
+
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search MIL-SPEC, temp rating, or features...">
+            </div>
+
+            <div class="filter-tags">
+                <div class="filter-tag" data-filter="all">All Wires</div>
+                <div class="filter-tag" data-filter="shielded">Shielded</div>
+                <div class="filter-tag" data-filter="high-temp">High Temp</div>
+                <div class="filter-tag" data-filter="oil-resistant">Oil Resistant</div>
+            </div>
+
+            <div class="wire-database" id="wireDatabase"></div>
+        </div>
+
+        <!-- Right Panel: Selection & Validation -->
+        <div class="panel">
+            <div class="panel-title">✅ Wire Selection & Validation</div>
+
+            <div class="current-scenario-display" id="currentScenarioDisplay">
+                <div class="scenario-title">Select a scenario to begin</div>
+            </div>
+
+            <div class="selection-area" id="selectionArea">
+                <div class="no-selection">
+                    Click a wire from the database to select it for the current scenario
+                </div>
+            </div>
+
+            <div id="validationSection"></div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="validateBtn" disabled>Validate Selection</button>
+                <button class="btn btn-success" id="submitBtn" disabled>Submit Final Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Final Report -->
+    <div class="modal" id="reportModal">
+        <div class="modal-content">
+            <div class="modal-header">📄 Maintenance Report - Wire Selection Summary</div>
+            <div id="reportContent"></div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="closeModal()">Close Report</button>
+                <button class="btn btn-success" onclick="resetSimulation()">Start New Session</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wire Database - 12 options, only 3 correct
+        const wireDatabase = [
+            {
+                id: 1,
+                milSpec: "M22759/16-20-9",
+                type: "PTFE Insulated",
+                tempRating: 260,
+                voltageRating: 600,
+                awg: 20,
+                shielded: false,
+                oilResistant: true,
+                fluidResistant: true,
+                description: "High-temperature PTFE insulated wire, oil and fluid resistant",
+                features: ["high-temp", "oil-resistant"]
+            },
+            {
+                id: 2,
+                milSpec: "M22759/32-22-9",
+                type: "Shielded PTFE",
+                tempRating: 200,
+                voltageRating: 600,
+                awg: 22,
+                shielded: true,
+                oilResistant: false,
+                fluidResistant: true,
+                description: "Shielded wire for EMI/RFI protection in avionics",
+                features: ["shielded"]
+            },
+            {
+                id: 3,
+                milSpec: "M22759/11-22-9",
+                type: "Standard PTFE",
+                tempRating: 200,
+                voltageRating: 600,
+                awg: 22,
+                shielded: false,
+                oilResistant: false,
+                fluidResistant: true,
+                description: "Standard PTFE insulated wire for general aircraft use",
+                features: []
+            },
+            {
+                id: 4,
+                milSpec: "M22759/18-20-9",
+                type: "PTFE Insulated",
+                tempRating: 200,
+                voltageRating: 600,
+                awg: 20,
+                shielded: false,
+                oilResistant: true,
+                fluidResistant: true,
+                description: "Oil resistant but lower temp rating than required",
+                features: ["oil-resistant"]
+            },
+            {
+                id: 5,
+                milSpec: "M22759/33-22-9",
+                type: "Unshielded PTFE",
+                tempRating: 200,
+                voltageRating: 600,
+                awg: 22,
+                shielded: false,
+                oilResistant: false,
+                fluidResistant: true,
+                description: "Similar to M22759/32 but without shielding",
+                features: []
+            },
+            {
+                id: 6,
+                milSpec: "M22759/16-22-9",
+                type: "PTFE Insulated",
+                tempRating: 260,
+                voltageRating: 600,
+                awg: 22,
+                shielded: false,
+                oilResistant: true,
+                fluidResistant: true,
+                description: "High-temp oil resistant, wrong AWG for engine application",
+                features: ["high-temp", "oil-resistant"]
+            },
+            {
+                id: 7,
+                milSpec: "M22759/34-22-9",
+                type: "Shielded Standard",
+                tempRating: 150,
+                voltageRating: 600,
+                awg: 22,
+                shielded: true,
+                oilResistant: false,
+                fluidResistant: false,
+                description: "Shielded but inadequate temp rating",
+                features: ["shielded"]
+            },
+            {
+                id: 8,
+                milSpec: "M22759/11-20-9",
+                type: "Standard PTFE",
+                tempRating: 200,
+                voltageRating: 600,
+                awg: 20,
+                shielded: false,
+                oilResistant: false,
+                fluidResistant: true,
+                description: "Standard wire, wrong AWG for cabin use",
+                features: []
+            },
+            {
+                id: 9,
+                milSpec: "M22759/80-22-9",
+                type: "Crosslinked ETFE",
+                tempRating: 150,
+                voltageRating: 600,
+                awg: 22,
+                shielded: false,
+                oilResistant: true,
+                fluidResistant: false,
+                description: "Oil resistant but inadequate temperature rating",
+                features: ["oil-resistant"]
+            },
+            {
+                id: 10,
+                milSpec: "M22759/43-20-9",
+                type: "Dual Wall PTFE",
+                tempRating: 260,
+                voltageRating: 1000,
+                awg: 20,
+                shielded: false,
+                oilResistant: false,
+                fluidResistant: true,
+                description: "High voltage rating but not oil resistant",
+                features: ["high-temp"]
+            },
+            {
+                id: 11,
+                milSpec: "M22759/92-22-9",
+                type: "Lightweight PTFE",
+                tempRating: 200,
+                voltageRating: 300,
+                awg: 22,
+                shielded: false,
+                oilResistant: false,
+                fluidResistant: true,
+                description: "Lightweight but inadequate voltage rating",
+                features: []
+            },
+            {
+                id: 12,
+                milSpec: "M22759/41-20-9",
+                type: "High Voltage PTFE",
+                tempRating: 200,
+                voltageRating: 1000,
+                awg: 20,
+                shielded: true,
+                oilResistant: false,
+                fluidResistant: true,
+                description: "Shielded high voltage, wrong AWG and not oil resistant",
+                features: ["shielded"]
+            }
+        ];
+
+        // Scenarios
+        const scenarios = [
+            {
+                id: 1,
+                title: "Engine Compartment Sensor Wiring",
+                location: "Aircraft N437RJ - Right Engine, Station 247",
+                description: "EGT sensor wire replacement due to insulation failure",
+                environment: {
+                    temp: "260°C",
+                    exposure: "Oil/Fuel",
+                    vibration: "High",
+                    emi: "Low"
+                },
+                requirements: {
+                    awg: 20,
+                    tempMin: 260,
+                    oilResistant: true,
+                    shielded: false
+                },
+                correctWireId: 1, // M22759/16-20-9
+                status: "pending"
+            },
+            {
+                id: 2,
+                title: "Avionics Bay Signal Wire",
+                location: "Aircraft N892TC - Avionics Bay, Rack 3",
+                description: "GPS antenna signal wire with EMI interference issues",
+                environment: {
+                    temp: "85°C",
+                    exposure: "Clean/Dry",
+                    vibration: "Low",
+                    emi: "Very High"
+                },
+                requirements: {
+                    awg: 22,
+                    tempMin: 200,
+                    oilResistant: false,
+                    shielded: true
+                },
+                correctWireId: 2, // M22759/32-22-9
+                status: "pending"
+            },
+            {
+                id: 3,
+                title: "Cabin Lighting Circuit",
+                location: "Aircraft N612KL - Passenger Cabin, Section 2",
+                description: "Reading light circuit replacement after inspection failure",
+                environment: {
+                    temp: "70°C",
+                    exposure: "Clean/Dry",
+                    vibration: "Medium",
+                    emi: "Low"
+                },
+                requirements: {
+                    awg: 22,
+                    tempMin: 200,
+                    oilResistant: false,
+                    shielded: false
+                },
+                correctWireId: 3, // M22759/11-22-9
+                status: "pending"
+            }
+        ];
+
+        let currentScenario = null;
+        let selections = {};
+        let filterMode = 'all';
+
+        // Initialize
+        function init() {
+            renderScenarios();
+            renderWireDatabase();
+            setupEventListeners();
+        }
+
+        function renderScenarios() {
+            const container = document.getElementById('scenariosContainer');
+            container.innerHTML = scenarios.map(scenario => `
+                <div class="scenario-card ${currentScenario?.id === scenario.id ? 'active' : ''} ${scenario.status === 'completed' ? 'completed' : ''} ${scenario.status === 'failed' ? 'failed' : ''}"
+                     onclick="selectScenario(${scenario.id})">
+                    <div class="scenario-number">SCENARIO ${scenario.id}</div>
+                    <div class="scenario-title">${scenario.title}</div>
+                    <div class="scenario-location">📍 ${scenario.location}</div>
+                    <div class="env-params">
+                        <div class="env-item">
+                            <span class="env-label">Temperature</span>
+                            <span class="env-value">${scenario.environment.temp}</span>
+                        </div>
+                        <div class="env-item">
+                            <span class="env-label">Exposure</span>
+                            <span class="env-value">${scenario.environment.exposure}</span>
+                        </div>
+                        <div class="env-item">
+                            <span class="env-label">Vibration</span>
+                            <span class="env-value">${scenario.environment.vibration}</span>
+                        </div>
+                        <div class="env-item">
+                            <span class="env-label">EMI Level</span>
+                            <span class="env-value">${scenario.environment.emi}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderWireDatabase() {
+            const container = document.getElementById('wireDatabase');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            let filteredWires = wireDatabase.filter(wire => {
+                const matchesSearch = wire.milSpec.toLowerCase().includes(searchTerm) ||
+                                    wire.description.toLowerCase().includes(searchTerm) ||
+                                    wire.tempRating.toString().includes(searchTerm);
+
+                const matchesFilter = filterMode === 'all' || wire.features.includes(filterMode);
+
+                return matchesSearch && matchesFilter;
+            });
+
+            container.innerHTML = filteredWires.map(wire => {
+                const isSelected = currentScenario && selections[currentScenario.id] === wire.id;
+                return `
+                    <div class="wire-card ${isSelected ? 'selected' : ''}" onclick="selectWire(${wire.id})">
+                        <div class="wire-mil-spec">
+                            ${wire.milSpec}
+                            ${wire.shielded ? '<span class="wire-badge badge-shielded">SHIELDED</span>' : ''}
+                            ${wire.tempRating >= 260 ? '<span class="wire-badge badge-high-temp">HIGH TEMP</span>' : ''}
+                            ${wire.oilResistant ? '<span class="wire-badge badge-oil-resistant">OIL RES</span>' : ''}
+                        </div>
+                        <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 8px;">${wire.type}</div>
+                        <div style="font-size: 11px; color: #888; line-height: 1.4;">${wire.description}</div>
+                        <div class="wire-specs">
+                            <div class="spec-item">
+                                <span class="spec-label">Temp:</span>
+                                <span class="spec-value">${wire.tempRating}°C</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Voltage:</span>
+                                <span class="spec-value">${wire.voltageRating}V</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">AWG:</span>
+                                <span class="spec-value">${wire.awg}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Shield:</span>
+                                <span class="spec-value">${wire.shielded ? 'Yes' : 'No'}</span>
+                            </div>
+                        </div>
+                        <div class="wire-visual">
+                            <div class="wire-diagram">
+                                <div class="wire-cross-section">
+                                    ${wire.shielded ? '<div class="wire-shield"></div>' : ''}
+                                </div>
+                            </div>
+                            <div style="font-size: 10px; color: #666;">
+                                ${wire.oilResistant ? '🛢️ Oil Resistant • ' : ''}
+                                ${wire.fluidResistant ? '💧 Fluid Resistant' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectScenario(scenarioId) {
+            currentScenario = scenarios.find(s => s.id === scenarioId);
+            renderScenarios();
+            updateSelectionPanel();
+            updateValidateButton();
+        }
+
+        function selectWire(wireId) {
+            if (!currentScenario) {
+                showNotification('Please select a scenario first', 'error');
+                return;
+            }
+
+            selections[currentScenario.id] = wireId;
+            renderWireDatabase();
+            updateSelectionPanel();
+            updateValidateButton();
+        }
+
+        function updateSelectionPanel() {
+            const displayDiv = document.getElementById('currentScenarioDisplay');
+            const selectionArea = document.getElementById('selectionArea');
+
+            if (!currentScenario) {
+                displayDiv.innerHTML = '<div class="scenario-title">Select a scenario to begin</div>';
+                selectionArea.innerHTML = '<div class="no-selection">Click a wire from the database to select it for the current scenario</div>';
+                selectionArea.classList.remove('has-selection');
+                return;
+            }
+
+            displayDiv.innerHTML = `
+                <div class="scenario-title">${currentScenario.title}</div>
+                <div style="font-size: 12px; color: #b0b0b0; margin-top: 5px;">${currentScenario.description}</div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size: 11px; color: #888; margin-bottom: 6px;">REQUIRED SPECIFICATIONS:</div>
+                    <div style="font-size: 12px; color: #00d9ff;">
+                        • Temp Rating: ≥${currentScenario.requirements.tempMin}°C<br>
+                        • AWG: ${currentScenario.requirements.awg}<br>
+                        • Oil Resistant: ${currentScenario.requirements.oilResistant ? 'Required' : 'Not Required'}<br>
+                        • Shielding: ${currentScenario.requirements.shielded ? 'Required' : 'Not Required'}
+                    </div>
+                </div>
+            `;
+
+            const selectedWireId = selections[currentScenario.id];
+            if (selectedWireId) {
+                const wire = wireDatabase.find(w => w.id === selectedWireId);
+                selectionArea.classList.add('has-selection');
+                selectionArea.innerHTML = `
+                    <div class="selected-wire-display">
+                        <div class="selected-wire-title">${wire.milSpec}</div>
+                        <div style="font-size: 13px; color: #b0b0b0; margin-bottom: 15px;">${wire.description}</div>
+                        <div class="wire-specs">
+                            <div class="spec-item">
+                                <span class="spec-label">Temperature Rating:</span>
+                                <span class="spec-value">${wire.tempRating}°C</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Voltage Rating:</span>
+                                <span class="spec-value">${wire.voltageRating}V</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">AWG Size:</span>
+                                <span class="spec-value">${wire.awg}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Shielded:</span>
+                                <span class="spec-value">${wire.shielded ? 'Yes' : 'No'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Oil Resistant:</span>
+                                <span class="spec-value">${wire.oilResistant ? 'Yes' : 'No'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Fluid Resistant:</span>
+                                <span class="spec-value">${wire.fluidResistant ? 'Yes' : 'No'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                selectionArea.classList.remove('has-selection');
+                selectionArea.innerHTML = '<div class="no-selection">Click a wire from the database to select it for this scenario</div>';
+            }
+        }
+
+        function validateSelection() {
+            if (!currentScenario || !selections[currentScenario.id]) return;
+
+            const selectedWire = wireDatabase.find(w => w.id === selections[currentScenario.id]);
+            const isCorrect = selectedWire.id === currentScenario.correctWireId;
+
+            const validationSection = document.getElementById('validationSection');
+
+            // Check individual criteria
+            const tempPass = selectedWire.tempRating >= currentScenario.requirements.tempMin;
+            const awgPass = selectedWire.awg === currentScenario.requirements.awg;
+            const oilPass = !currentScenario.requirements.oilResistant || selectedWire.oilResistant;
+            const shieldPass = currentScenario.requirements.shielded === selectedWire.shielded;
+
+            let validationHTML = `
+                <div class="validation-section">
+                    <div class="validation-title">Validation Results</div>
+                    <div class="validation-item ${tempPass ? 'pass' : 'fail'}">
+                        <span class="status-indicator ${tempPass ? 'status-pass' : 'status-fail'}"></span>
+                        Temperature Rating: ${selectedWire.tempRating}°C ${tempPass ? '✓' : '✗ (Required: ≥' + currentScenario.requirements.tempMin + '°C)'}
+                    </div>
+                    <div class="validation-item ${awgPass ? 'pass' : 'fail'}">
+                        <span class="status-indicator ${awgPass ? 'status-pass' : 'status-fail'}"></span>
+                        AWG Size: ${selectedWire.awg} ${awgPass ? '✓' : '✗ (Required: ' + currentScenario.requirements.awg + ')'}
+                    </div>
+                    <div class="validation-item ${oilPass ? 'pass' : 'fail'}">
+                        <span class="status-indicator ${oilPass ? 'status-pass' : 'status-fail'}"></span>
+                        Oil Resistance: ${selectedWire.oilResistant ? 'Yes' : 'No'} ${oilPass ? '✓' : '✗ (Required)'}
+                    </div>
+                    <div class="validation-item ${shieldPass ? 'pass' : 'fail'}">
+                        <span class="status-indicator ${shieldPass ? 'status-pass' : 'status-fail'}"></span>
+                        Shielding: ${selectedWire.shielded ? 'Yes' : 'No'} ${shieldPass ? '✓' : '✗ (Required: ' + (currentScenario.requirements.shielded ? 'Yes' : 'No') + ')'}
+                    </div>
+                </div>
+            `;
+
+            if (!isCorrect) {
+                // Determine failure mode
+                let failureMode = '';
+                let animationHTML = '';
+
+                if (!tempPass) {
+                    failureMode = 'Temperature Insufficient - Insulation Failure';
+                    animationHTML = '<div class="failure-animation"><div class="melted-insulation"></div></div>';
+                } else if (!shieldPass && currentScenario.requirements.shielded) {
+                    failureMode = 'EMI/RFI Interference - No Shielding';
+                    animationHTML = '<div class="failure-animation"><div class="emi-interference"><div class="emi-wave"></div><div class="emi-wave" style="animation-delay: 0.5s;"></div></div></div>';
+                } else if (!oilPass) {
+                    failureMode = 'Environmental Degradation - Not Oil Resistant';
+                    animationHTML = '<div class="failure-animation"><div class="melted-insulation"></div></div>';
+                } else {
+                    failureMode = 'Specification Mismatch - Failed Inspection';
+                    animationHTML = '<div class="failure-animation"><div style="color: #ff4444; text-align: center; padding: 20px;">❌ FAILED FAA INSPECTION</div></div>';
+                }
+
+                validationHTML += `
+                    <div class="consequence-display">
+                        <div class="consequence-title">⚠️ FAILURE MODE: ${failureMode}</div>
+                        <div style="font-size: 12px; color: #ffaaaa; margin-bottom: 10px;">
+                            This wire selection would result in:
+                            ${!tempPass ? '• Insulation melting/degradation at operating temperature<br>' : ''}
+                            ${!shieldPass && currentScenario.requirements.shielded ? '• Signal interference and data corruption<br>' : ''}
+                            ${!oilPass ? '• Premature insulation breakdown from fluid exposure<br>' : ''}
+                            ${!awgPass ? '• Improper current carrying capacity<br>' : ''}
+                            • Failed regulatory inspection<br>
+                            • Aircraft remains grounded
+                        </div>
+                        ${animationHTML}
+                    </div>
+                `;
+
+                currentScenario.status = 'failed';
+                showNotification('Incorrect wire selection - Review failure mode', 'error');
+            } else {
+                currentScenario.status = 'completed';
+                validationHTML += `
+                    <div style="background: rgba(0, 255, 136, 0.2); border: 2px solid #00ff88; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                        <div style="color: #00ff88; font-weight: bold; margin-bottom: 8px;">✅ CORRECT SELECTION</div>
+                        <div style="font-size: 12px; color: #aaffaa;">
+                            Wire meets all environmental and regulatory requirements.
+                            Aircraft cleared for return to service.
+                        </div>
+                    </div>
+                `;
+                showNotification('Correct wire selected!', 'success');
+            }
+
+            validationSection.innerHTML = validationHTML;
+            renderScenarios();
+            updateProgress();
+            updateSubmitButton();
+        }
+
+        function updateValidateButton() {
+            const btn = document.getElementById('validateBtn');
+            btn.disabled = !currentScenario || !selections[currentScenario.id];
+        }
+
+        function updateSubmitButton() {
+            const btn = document.getElementById('submitBtn');
+            const allValidated = scenarios.every(s => s.status === 'completed' || s.status === 'failed');
+            btn.disabled = !allValidated;
+        }
+
+        function updateProgress() {
+            const completed = scenarios.filter(s => s.status === 'completed' || s.status === 'failed').length;
+            const progress = (completed / scenarios.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function submitFinalReport() {
+            const modal = document.getElementById('reportModal');
+            const content = document.getElementById('reportContent');
+
+            const correctCount = scenarios.filter(s => s.status === 'completed').length;
+            const score = Math.round((correctCount / scenarios.length) * 100);
+
+            let reportHTML = '<div class="report-section"><div class="report-section-title">Wire Selection Summary</div>';
+
+            scenarios.forEach(scenario => {
+                const selectedWire = wireDatabase.find(w => w.id === selections[scenario.id]);
+                const correctWire = wireDatabase.find(w => w.id === scenario.correctWireId);
+                const isCorrect = scenario.status === 'completed';
+
+                reportHTML += `
+                    <div class="report-item ${isCorrect ? 'success' : 'failure'}">
+                        <div style="font-weight: bold; color: ${isCorrect ? '#00ff88' : '#ff4444'}; margin-bottom: 8px;">
+                            ${scenario.title} - ${isCorrect ? 'PASS' : 'FAIL'}
+                        </div>
+                        <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 8px;">
+                            📍 ${scenario.location}
+                        </div>
+                        <div style="font-size: 12px; color: #e0e0e0;">
+                            <strong>Your Selection:</strong> ${selectedWire.milSpec}<br>
+                            <strong>Correct Wire:</strong> ${correctWire.milSpec}<br>
+                            <strong>Justification:</strong> ${isCorrect ?
+                                'Wire meets all temperature, environmental, and shielding requirements per AC 43.13-1B' :
+                                'Wire fails to meet critical requirements - see validation report'}
+                        </div>
+                    </div>
+                `;
+            });
+
+            reportHTML += '</div>';
+
+            reportHTML += `
+                <div class="score-display">
+                    <div class="score-value">${score}%</div>
+                    <div class="score-label">Overall Score</div>
+                    <div style="margin-top: 15px; color: ${score === 100 ? '#00ff88' : score >= 66 ? '#ffa500' : '#ff4444'}; font-size: 16px; font-weight: bold;">
+                        ${score === 100 ? '🏆 EXCELLENT - All aircraft cleared for service' :
+                          score >= 66 ? '⚠️ PARTIAL SUCCESS - Review failed selections' :
+                          '❌ TRAINING REQUIRED - Multiple critical failures'}
+                    </div>
+                </div>
+
+                <div class="regulatory-ref">
+                    <div class="ref-title">📋 Maintenance Sign-Off</div>
+                    <div class="ref-content">
+                        This report documents wire selection decisions per FAR Part 43 and AC 43.13-1B Chapter 11.
+                        ${score === 100 ? 'All selections meet regulatory requirements.' : 'Failed selections require corrective action before aircraft release.'}
+                    </div>
+                </div>
+            `;
+
+            content.innerHTML = reportHTML;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('reportModal').classList.remove('active');
+        }
+
+        function resetSimulation() {
+            scenarios.forEach(s => s.status = 'pending');
+            selections = {};
+            currentScenario = null;
+            filterMode = 'all';
+
+            document.getElementById('validationSection').innerHTML = '';
+            document.getElementById('searchInput').value = '';
+
+            renderScenarios();
+            renderWireDatabase();
+            updateSelectionPanel();
+            updateValidateButton();
+            updateSubmitButton();
+            updateProgress();
+            closeModal();
+
+            showNotification('Simulation reset - New training session started', 'success');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', renderWireDatabase);
+            document.getElementById('validateBtn').addEventListener('click', validateSelection);
+            document.getElementById('submitBtn').addEventListener('click', submitFinalReport);
+
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    filterMode = this.dataset.filter;
+                    renderWireDatabase();
+                });
+            });
+
+            // Set initial filter
+            document.querySelector('.filter-tag[data-filter="all"]').classList.add('active');
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
