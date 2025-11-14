@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genealogy Historical Context Enricher - AEA Training Hangar</title>
+    <style>
+        :root {
+            --neon-cyan: #33f6ff;
+            --magenta: #ff68d7;
+            --lime: #a8ff60;
+            --amber: #ffc857;
+            --dark-bg: #0b0f2b;
+            --darker-bg: #060920;
+            --card-bg: rgba(15, 20, 45, 0.95);
+            --border-glow: rgba(51, 246, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
+            color: var(--neon-cyan);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--card-bg);
+            border: 2px solid var(--amber);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 200, 87, 0.4);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: var(--amber);
+            text-shadow: 0 0 10px var(--amber);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--neon-cyan);
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px var(--border-glow);
+            max-height: calc(100vh - 250px);
+            overflow-y: auto;
+        }
+
+        .content-area {
+            background: var(--card-bg);
+            border: 2px solid var(--magenta);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(255, 104, 215, 0.3);
+            max-height: calc(100vh - 250px);
+            overflow-y: auto;
+        }
+
+        h2 {
+            color: var(--amber);
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px var(--amber);
+            font-size: 1.5em;
+        }
+
+        h3 {
+            color: var(--magenta);
+            margin: 15px 0 10px;
+            text-shadow: 0 0 5px var(--magenta);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: var(--lime);
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(11, 15, 43, 0.8);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 5px;
+            color: var(--neon-cyan);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--magenta);
+            box-shadow: 0 0 10px rgba(255, 104, 215, 0.5);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--magenta), var(--neon-cyan));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 104, 215, 0.6);
+        }
+
+        button.secondary {
+            background: linear-gradient(135deg, var(--lime), var(--amber));
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+        }
+
+        .person-card {
+            background: rgba(11, 15, 43, 0.9);
+            border: 2px solid var(--lime);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 0 15px rgba(168, 255, 96, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .person-card:hover {
+            transform: translateX(5px);
+            border-color: var(--amber);
+            box-shadow: 0 0 20px rgba(255, 200, 87, 0.5);
+        }
+
+        .person-card.selected {
+            border-color: var(--magenta);
+            box-shadow: 0 0 25px rgba(255, 104, 215, 0.6);
+        }
+
+        .person-name {
+            font-size: 1.2em;
+            color: var(--amber);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .person-dates {
+            color: var(--neon-cyan);
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .person-location {
+            color: var(--lime);
+            font-size: 0.9em;
+        }
+
+        .context-section {
+            background: rgba(6, 9, 32, 0.8);
+            border-left: 4px solid var(--amber);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .context-section h4 {
+            color: var(--amber);
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .event-item {
+            background: rgba(11, 15, 43, 0.6);
+            border-left: 3px solid var(--magenta);
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 3px;
+        }
+
+        .event-year {
+            color: var(--neon-cyan);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .event-text {
+            color: var(--lime);
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+            margin: 20px 0;
+        }
+
+        .timeline-bar {
+            width: 100%;
+            height: 40px;
+            background: linear-gradient(90deg, var(--magenta), var(--neon-cyan), var(--lime));
+            border-radius: 20px;
+            position: relative;
+            margin: 20px 0;
+            box-shadow: 0 0 20px rgba(51, 246, 255, 0.5);
+        }
+
+        .timeline-marker {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: var(--amber);
+            border: 2px solid white;
+            border-radius: 50%;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 0 10px var(--amber);
+            cursor: pointer;
+        }
+
+        .timeline-label {
+            position: absolute;
+            top: -25px;
+            font-size: 0.8em;
+            color: var(--amber);
+            white-space: nowrap;
+            transform: translateX(-50%);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: var(--card-bg);
+            border: 2px solid var(--lime);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(168, 255, 96, 0.3);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: var(--amber);
+            font-weight: bold;
+            text-shadow: 0 0 10px var(--amber);
+        }
+
+        .stat-label {
+            color: var(--neon-cyan);
+            font-size: 0.9em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--neon-cyan);
+            opacity: 0.6;
+        }
+
+        .tag {
+            display: inline-block;
+            background: rgba(255, 104, 215, 0.3);
+            border: 1px solid var(--magenta);
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin: 2px;
+            color: var(--magenta);
+        }
+
+        .search-box {
+            margin-bottom: 15px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 2px solid var(--magenta);
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(255, 104, 215, 0.6);
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 1.5em;
+            color: var(--magenta);
+            cursor: pointer;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--darker-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--magenta);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-cyan);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📜 GENEALOGY HISTORICAL CONTEXT ENRICHER</h1>
+            <p class="subtitle">Discover the history behind your ancestors' lives</p>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalPeople">0</div>
+                <div class="stat-label">ANCESTORS</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="timeSpan">-</div>
+                <div class="stat-label">TIME SPAN</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="contextsFound">0</div>
+                <div class="stat-label">CONTEXTS</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="locationsCount">0</div>
+                <div class="stat-label">LOCATIONS</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <h2>Add Ancestor</h2>
+                <div class="input-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="personName" placeholder="e.g., John Smith">
+                </div>
+                <div class="input-group">
+                    <label>Birth Year *</label>
+                    <input type="number" id="birthYear" placeholder="e.g., 1850" min="1500" max="2024">
+                </div>
+                <div class="input-group">
+                    <label>Death Year</label>
+                    <input type="number" id="deathYear" placeholder="e.g., 1920" min="1500" max="2024">
+                </div>
+                <div class="input-group">
+                    <label>Primary Location *</label>
+                    <input type="text" id="location" placeholder="e.g., Liverpool, England">
+                </div>
+                <div class="input-group">
+                    <label>Occupation</label>
+                    <input type="text" id="occupation" placeholder="e.g., Coal Miner">
+                </div>
+                <div class="input-group">
+                    <label>Additional Notes</label>
+                    <textarea id="notes" rows="3" placeholder="Any additional information..."></textarea>
+                </div>
+                <button onclick="addPerson()">Add Ancestor</button>
+                <button class="secondary" onclick="clearForm()">Clear Form</button>
+
+                <h3 style="margin-top: 30px;">Ancestor List</h3>
+                <div class="search-box">
+                    <input type="text" id="searchBox" placeholder="🔍 Search ancestors..." oninput="filterPeople()">
+                </div>
+                <div id="peopleList"></div>
+            </div>
+
+            <div class="content-area">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2>Historical Context</h2>
+                    <div>
+                        <button class="secondary" onclick="exportData()">Export Data</button>
+                        <button class="secondary" onclick="document.getElementById('importFile').click()">Import Data</button>
+                        <button class="danger" onclick="clearAllData()">Clear All</button>
+                        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                    </div>
+                </div>
+                <div id="contextDisplay"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2>Import Sample Data</h2>
+            <p>Would you like to load sample genealogy data to see how the tool works?</p>
+            <button onclick="loadSampleData()">Load Sample Data</button>
+            <button class="secondary" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Historical context database
+        const historicalDatabase = {
+            events: [
+                // Major World Events
+                { year: 1776, event: "American Declaration of Independence", region: "North America", category: "political" },
+                { year: 1789, event: "French Revolution begins", region: "France", category: "political" },
+                { year: 1803, event: "Louisiana Purchase", region: "North America", category: "political" },
+                { year: 1812, event: "War of 1812", region: "North America", category: "war" },
+                { year: 1820, event: "Missouri Compromise", region: "United States", category: "political" },
+                { year: 1837, event: "Victorian Era begins", region: "United Kingdom", category: "cultural" },
+                { year: 1845, event: "Irish Potato Famine begins", region: "Ireland", category: "disaster" },
+                { year: 1848, event: "California Gold Rush", region: "United States", category: "economic" },
+                { year: 1854, event: "Crimean War", region: "Europe", category: "war" },
+                { year: 1861, event: "American Civil War begins", region: "United States", category: "war" },
+                { year: 1865, event: "Slavery abolished in United States (13th Amendment)", region: "United States", category: "political" },
+                { year: 1869, event: "Transcontinental Railroad completed", region: "United States", category: "infrastructure" },
+                { year: 1871, event: "Great Chicago Fire", region: "United States", category: "disaster" },
+                { year: 1876, event: "Alexander Graham Bell invents telephone", region: "Global", category: "technology" },
+                { year: 1879, event: "Thomas Edison invents light bulb", region: "Global", category: "technology" },
+                { year: 1886, event: "Statue of Liberty dedicated", region: "United States", category: "cultural" },
+                { year: 1889, event: "Eiffel Tower completed", region: "France", category: "cultural" },
+                { year: 1892, event: "Ellis Island opens", region: "United States", category: "migration" },
+                { year: 1896, event: "First modern Olympic Games", region: "Greece", category: "cultural" },
+                { year: 1901, event: "Queen Victoria dies, Edwardian Era begins", region: "United Kingdom", category: "political" },
+                { year: 1903, event: "Wright Brothers first flight", region: "United States", category: "technology" },
+                { year: 1906, event: "San Francisco Earthquake", region: "United States", category: "disaster" },
+                { year: 1912, event: "Titanic sinks", region: "Atlantic Ocean", category: "disaster" },
+                { year: 1914, event: "World War I begins", region: "Global", category: "war" },
+                { year: 1917, event: "Russian Revolution", region: "Russia", category: "political" },
+                { year: 1918, event: "World War I ends, Spanish Flu pandemic", region: "Global", category: "war" },
+                { year: 1920, event: "Women's suffrage in United States (19th Amendment)", region: "United States", category: "political" },
+                { year: 1929, event: "Great Depression begins", region: "Global", category: "economic" },
+                { year: 1939, event: "World War II begins", region: "Global", category: "war" },
+                { year: 1945, event: "World War II ends, United Nations founded", region: "Global", category: "war" },
+                { year: 1947, event: "Partition of India", region: "South Asia", category: "political" },
+                { year: 1950, event: "Korean War begins", region: "Asia", category: "war" },
+                { year: 1954, event: "Brown v. Board of Education", region: "United States", category: "political" },
+                { year: 1957, event: "Sputnik launched, Space Age begins", region: "Global", category: "technology" },
+                { year: 1963, event: "Martin Luther King Jr. 'I Have a Dream' speech", region: "United States", category: "political" },
+                { year: 1969, event: "Moon landing", region: "Global", category: "technology" },
+                { year: 1989, event: "Fall of Berlin Wall", region: "Germany", category: "political" },
+                { year: 1991, event: "Soviet Union dissolves", region: "Europe/Asia", category: "political" },
+                { year: 2001, event: "September 11 attacks", region: "United States", category: "disaster" }
+            ],
+
+            migrations: [
+                { period: "1845-1855", pattern: "Irish emigration to North America due to famine", from: "Ireland", to: "United States/Canada" },
+                { period: "1840-1860", pattern: "German immigration to United States", from: "Germany", to: "United States" },
+                { period: "1880-1920", pattern: "Great Wave of Immigration to United States", from: "Southern/Eastern Europe", to: "United States" },
+                { period: "1910-1970", pattern: "Great Migration of African Americans", from: "Southern United States", to: "Northern United States" },
+                { period: "1947-1950", pattern: "Partition refugees", from: "India/Pakistan", to: "Pakistan/India" },
+                { period: "1850-1900", pattern: "Chinese immigration to Western United States", from: "China", to: "United States" },
+                { period: "1870-1920", pattern: "Italian immigration to Americas", from: "Italy", to: "United States/Argentina" },
+                { period: "1881-1914", pattern: "Jewish emigration from Eastern Europe", from: "Russia/Poland", to: "United States/Western Europe" },
+                { period: "1788-1868", pattern: "Convict transportation to Australia", from: "United Kingdom", to: "Australia" },
+                { period: "1620-1640", pattern: "Puritan migration to New England", from: "England", to: "Massachusetts" },
+                { period: "1830-1850", pattern: "British settlement in Australia and New Zealand", from: "United Kingdom", to: "Australia/New Zealand" }
+            ],
+
+            occupations: {
+                "farmer": "Agriculture was the dominant occupation. Farmers worked long hours with seasonal variations, often owning or renting small plots. Life was tied to harvest cycles and weather patterns.",
+                "coal miner": "Coal mining was dangerous work with high injury and death rates. Miners faced black lung disease, cave-ins, and explosions. Often lived in company towns with limited economic freedom.",
+                "blacksmith": "Skilled tradespeople essential to communities. Made and repaired tools, horseshoes, and metal goods. Often well-respected community members with stable income.",
+                "seamstress": "Women's work that could be done at home or in factories. Pay was typically low. Skills passed down through families. Factory seamstresses faced long hours and poor conditions.",
+                "teacher": "Required education, often reserved for middle-class individuals. Women teachers typically had to remain unmarried. Respected position but often underpaid.",
+                "carpenter": "Skilled trade requiring apprenticeship. Built homes, furniture, and structures. Could achieve economic stability and independence.",
+                "factory worker": "Industrial Revolution created factory jobs with long hours (12-16 hour days), dangerous conditions, and low pay. Child labor was common until reforms.",
+                "merchant": "Middle to upper-middle class occupation. Ran shops and trading businesses. Required capital and business acumen. Social standing varied with success.",
+                "sailor": "Life at sea was harsh and dangerous. Long voyages away from family. Exposure to different cultures. High mortality from disease, storms, and accidents.",
+                "soldier": "Military service could be voluntary or conscripted. Pay was often low. High risk of death or injury. Veterans' benefits varied by era and country.",
+                "domestic servant": "Very common occupation, especially for young women. Lived in employers' homes. Limited freedom but guaranteed food and shelter. Clear class divisions.",
+                "railroad worker": "Dangerous work building and maintaining railways. Key to westward expansion in US. Often immigrant labor. High injury rates.",
+                "clerk": "White-collar work requiring literacy and numeracy. Middle-class occupation. More stable and safer than manual labor.",
+                "nurse": "Profession professionalized in late 19th century. Florence Nightingale's influence. Initially low-status but grew in respectability. Long hours, emotional toll.",
+                "shopkeeper": "Small business owner. Required capital and business skills. Economic independence but vulnerable to competition and economic downturns."
+            },
+
+            socialContext: [
+                { period: "1500-1650", context: "Early Modern Period: Age of exploration, religious reformation, rise of nation-states. Limited social mobility. Agriculture-based economy." },
+                { period: "1650-1750", context: "Age of Enlightenment: Scientific revolution, growth of literacy, colonial expansion. Rigid class structures. Mercantile economy growing." },
+                { period: "1750-1850", context: "Industrial Revolution: Massive urbanization, factory system emerges, traditional crafts decline. Extreme wealth inequality. Child labor common. Beginning of social reform movements." },
+                { period: "1850-1900", context: "Victorian Era / Gilded Age: Rapid industrialization, railroad expansion, telegraph communication. Strict social codes. Women's rights movements begin. Labor unions form. Mass immigration." },
+                { period: "1900-1920", context: "Progressive Era / Edwardian Era: Women's suffrage movements, labor reforms, public health improvements. World War I transforms society. Spanish Flu pandemic. Modern conveniences emerge (electricity, automobiles)." },
+                { period: "1920-1945", context: "Interwar Period: Roaring Twenties prosperity, Great Depression hardship, rise of totalitarian regimes. World War II total mobilization. Women enter workforce in large numbers." },
+                { period: "1945-1970", context: "Post-War Boom: Economic prosperity in West, Cold War tensions, decolonization, civil rights movements, space race, television culture, suburban expansion." },
+                { period: "1970-2000", context: "Late 20th Century: Technological revolution, globalization, end of Cold War, environmental awareness, personal computers, internet emergence." }
+            ]
+        };
+
+        // Application state
+        let people = [];
+        let selectedPerson = null;
+
+        // Load data from localStorage on page load
+        window.addEventListener('load', () => {
+            loadFromStorage();
+            updateStats();
+            renderPeopleList();
+            if (people.length === 0) {
+                displayEmptyState();
+            }
+        });
+
+        function addPerson() {
+            const name = document.getElementById('personName').value.trim();
+            const birthYear = parseInt(document.getElementById('birthYear').value);
+            const deathYear = document.getElementById('deathYear').value ? parseInt(document.getElementById('deathYear').value) : null;
+            const location = document.getElementById('location').value.trim();
+            const occupation = document.getElementById('occupation').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+
+            if (!name || !birthYear || !location) {
+                alert('Please fill in all required fields (Name, Birth Year, Location)');
+                return;
+            }
+
+            if (deathYear && deathYear < birthYear) {
+                alert('Death year cannot be before birth year');
+                return;
+            }
+
+            const person = {
+                id: Date.now(),
+                name,
+                birthYear,
+                deathYear,
+                location,
+                occupation,
+                notes,
+                context: enrichWithContext(birthYear, deathYear, location, occupation)
+            };
+
+            people.push(person);
+            saveToStorage();
+            clearForm();
+            renderPeopleList();
+            updateStats();
+            selectPerson(person.id);
+
+            // Notify parent if in iframe (gamification)
+            if (window.parent && window.parent.completeModule) {
+                window.parent.completeModule('genealogy', 100);
+            }
+        }
+
+        function enrichWithContext(birthYear, deathYear, location, occupation) {
+            const endYear = deathYear || new Date().getFullYear();
+            const context = {
+                events: [],
+                migrations: [],
+                occupation: null,
+                socialContext: []
+            };
+
+            // Find relevant historical events
+            context.events = historicalDatabase.events.filter(event =>
+                event.year >= birthYear && event.year <= endYear
+            ).sort((a, b) => a.year - b.year);
+
+            // Find relevant migration patterns
+            context.migrations = historicalDatabase.migrations.filter(migration => {
+                const [startYear, endYear] = migration.period.split('-').map(y => parseInt(y));
+                return (startYear <= endYear && endYear >= birthYear) &&
+                       (migration.from.toLowerCase().includes(location.toLowerCase()) ||
+                        migration.to.toLowerCase().includes(location.toLowerCase()) ||
+                        location.toLowerCase().includes(migration.from.toLowerCase()) ||
+                        location.toLowerCase().includes(migration.to.toLowerCase()));
+            });
+
+            // Find occupation context
+            if (occupation) {
+                const occupationKey = occupation.toLowerCase();
+                for (let key in historicalDatabase.occupations) {
+                    if (occupationKey.includes(key) || key.includes(occupationKey)) {
+                        context.occupation = {
+                            title: occupation,
+                            description: historicalDatabase.occupations[key]
+                        };
+                        break;
+                    }
+                }
+            }
+
+            // Find social context
+            context.socialContext = historicalDatabase.socialContext.filter(sc => {
+                const [startYear, endYear] = sc.period.split('-').map(y => parseInt(y));
+                return birthYear <= endYear && (!deathYear || deathYear >= startYear);
+            });
+
+            return context;
+        }
+
+        function renderPeopleList() {
+            const listContainer = document.getElementById('peopleList');
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+
+            const filteredPeople = people.filter(person =>
+                person.name.toLowerCase().includes(searchTerm) ||
+                person.location.toLowerCase().includes(searchTerm) ||
+                (person.occupation && person.occupation.toLowerCase().includes(searchTerm))
+            );
+
+            if (filteredPeople.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state">No ancestors found</div>';
+                return;
+            }
+
+            listContainer.innerHTML = filteredPeople.map(person => `
+                <div class="person-card ${selectedPerson === person.id ? 'selected' : ''}"
+                     onclick="selectPerson(${person.id})">
+                    <div class="person-name">${person.name}</div>
+                    <div class="person-dates">
+                        ${person.birthYear} - ${person.deathYear || 'Present'}
+                        <span style="color: var(--amber); margin-left: 10px;">
+                            (${person.deathYear ? person.deathYear - person.birthYear : new Date().getFullYear() - person.birthYear} years)
+                        </span>
+                    </div>
+                    <div class="person-location">📍 ${person.location}</div>
+                    ${person.occupation ? `<div style="margin-top: 5px;"><span class="tag">${person.occupation}</span></div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function selectPerson(personId) {
+            selectedPerson = personId;
+            renderPeopleList();
+            displayContext(personId);
+        }
+
+        function displayContext(personId) {
+            const person = people.find(p => p.id === personId);
+            if (!person) return;
+
+            const contextContainer = document.getElementById('contextDisplay');
+            const lifespan = person.deathYear ? person.deathYear - person.birthYear : new Date().getFullYear() - person.birthYear;
+
+            let html = `
+                <div style="background: var(--card-bg); border: 2px solid var(--amber); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <h2 style="color: var(--amber); margin-bottom: 10px;">${person.name}</h2>
+                    <p style="color: var(--neon-cyan); font-size: 1.1em;">
+                        <strong>Born:</strong> ${person.birthYear} |
+                        <strong>Died:</strong> ${person.deathYear || 'Living'} |
+                        <strong>Lifespan:</strong> ${lifespan} years
+                    </p>
+                    <p style="color: var(--lime);">
+                        <strong>Location:</strong> ${person.location}
+                        ${person.occupation ? `| <strong>Occupation:</strong> ${person.occupation}` : ''}
+                    </p>
+                    ${person.notes ? `<p style="color: var(--neon-cyan); margin-top: 10px;"><strong>Notes:</strong> ${person.notes}</p>` : ''}
+                    <button class="danger" onclick="deletePerson(${person.id})" style="margin-top: 10px;">Delete Ancestor</button>
+                </div>
+
+                ${renderTimeline(person)}
+            `;
+
+            // Social Context
+            if (person.context.socialContext.length > 0) {
+                html += `
+                    <div class="context-section">
+                        <h4>🌍 Social & Cultural Context</h4>
+                        ${person.context.socialContext.map(sc => `
+                            <div class="event-item">
+                                <span class="event-year">${sc.period}</span>
+                                <span class="event-text">${sc.context}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Occupation Context
+            if (person.context.occupation) {
+                html += `
+                    <div class="context-section">
+                        <h4>💼 Occupation: ${person.context.occupation.title}</h4>
+                        <p style="color: var(--lime); line-height: 1.6;">${person.context.occupation.description}</p>
+                    </div>
+                `;
+            }
+
+            // Historical Events
+            if (person.context.events.length > 0) {
+                html += `
+                    <div class="context-section">
+                        <h4>📅 Historical Events During Lifetime (${person.context.events.length} events)</h4>
+                        ${person.context.events.slice(0, 15).map(event => `
+                            <div class="event-item">
+                                <span class="event-year">${event.year}</span>
+                                <span class="event-text">${event.event}</span>
+                                <span class="tag">${event.category}</span>
+                                <span class="tag">${event.region}</span>
+                            </div>
+                        `).join('')}
+                        ${person.context.events.length > 15 ? `<p style="color: var(--amber); margin-top: 10px;">+ ${person.context.events.length - 15} more events...</p>` : ''}
+                    </div>
+                `;
+            }
+
+            // Migration Patterns
+            if (person.context.migrations.length > 0) {
+                html += `
+                    <div class="context-section">
+                        <h4>🚢 Relevant Migration Patterns</h4>
+                        ${person.context.migrations.map(migration => `
+                            <div class="event-item">
+                                <span class="event-year">${migration.period}</span>
+                                <span class="event-text">${migration.pattern}</span><br>
+                                <span class="tag">${migration.from} → ${migration.to}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            contextContainer.innerHTML = html;
+        }
+
+        function renderTimeline(person) {
+            if (person.context.events.length === 0) return '';
+
+            const birthYear = person.birthYear;
+            const endYear = person.deathYear || new Date().getFullYear();
+            const span = endYear - birthYear;
+
+            const markers = person.context.events
+                .filter(e => e.year >= birthYear && e.year <= endYear)
+                .slice(0, 10)
+                .map(event => {
+                    const position = ((event.year - birthYear) / span) * 100;
+                    return `
+                        <div class="timeline-marker" style="left: ${position}%" title="${event.year}: ${event.event}">
+                            <div class="timeline-label">${event.year}</div>
+                        </div>
+                    `;
+                }).join('');
+
+            return `
+                <div class="context-section">
+                    <h4>⏰ Life Timeline (${birthYear} - ${endYear})</h4>
+                    <div class="timeline">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="color: var(--neon-cyan); font-size: 0.9em;">Birth: ${birthYear}</span>
+                            <span style="color: var(--neon-cyan); font-size: 0.9em;">${person.deathYear ? 'Death' : 'Present'}: ${endYear}</span>
+                        </div>
+                        <div class="timeline-bar">
+                            ${markers}
+                        </div>
+                        <p style="color: var(--lime); font-size: 0.9em; margin-top: 10px;">
+                            Hover over markers to see major events during their lifetime
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayEmptyState() {
+            const contextContainer = document.getElementById('contextDisplay');
+            contextContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3 style="color: var(--amber); margin-bottom: 20px;">Welcome to the Genealogy Historical Context Enricher!</h3>
+                    <p style="font-size: 1.1em; margin-bottom: 20px;">
+                        Start by adding an ancestor using the form on the left, or import existing data.
+                    </p>
+                    <p style="margin-bottom: 30px;">
+                        This tool will automatically enrich your genealogy data with:
+                    </p>
+                    <ul style="text-align: left; display: inline-block; color: var(--lime);">
+                        <li style="margin: 10px 0;">📅 Historical events during their lifetime</li>
+                        <li style="margin: 10px 0;">🚢 Relevant migration patterns</li>
+                        <li style="margin: 10px 0;">💼 Occupational context and social history</li>
+                        <li style="margin: 10px 0;">🌍 Cultural and social context for their era</li>
+                        <li style="margin: 10px 0;">⏰ Interactive timeline visualization</li>
+                    </ul>
+                    <div style="margin-top: 30px;">
+                        <button onclick="loadSampleData()">Load Sample Data</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            document.getElementById('totalPeople').textContent = people.length;
+
+            if (people.length > 0) {
+                const years = people.map(p => p.birthYear);
+                const minYear = Math.min(...years);
+                const maxYear = Math.max(...people.map(p => p.deathYear || new Date().getFullYear()));
+                document.getElementById('timeSpan').textContent = `${minYear}-${maxYear}`;
+
+                const totalContexts = people.reduce((sum, p) => sum + p.context.events.length, 0);
+                document.getElementById('contextsFound').textContent = totalContexts;
+
+                const uniqueLocations = new Set(people.map(p => p.location.toLowerCase()));
+                document.getElementById('locationsCount').textContent = uniqueLocations.size;
+            } else {
+                document.getElementById('timeSpan').textContent = '-';
+                document.getElementById('contextsFound').textContent = '0';
+                document.getElementById('locationsCount').textContent = '0';
+            }
+        }
+
+        function filterPeople() {
+            renderPeopleList();
+        }
+
+        function clearForm() {
+            document.getElementById('personName').value = '';
+            document.getElementById('birthYear').value = '';
+            document.getElementById('deathYear').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('occupation').value = '';
+            document.getElementById('notes').value = '';
+        }
+
+        function deletePerson(personId) {
+            if (confirm('Are you sure you want to delete this ancestor?')) {
+                people = people.filter(p => p.id !== personId);
+                saveToStorage();
+                renderPeopleList();
+                updateStats();
+                if (people.length === 0) {
+                    displayEmptyState();
+                } else {
+                    selectPerson(people[0].id);
+                }
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('genealogyData', JSON.stringify(people));
+        }
+
+        function loadFromStorage() {
+            const data = localStorage.getItem('genealogyData');
+            if (data) {
+                people = JSON.parse(data);
+            }
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(people, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `genealogy-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        people = imported;
+                        saveToStorage();
+                        renderPeopleList();
+                        updateStats();
+                        if (people.length > 0) {
+                            selectPerson(people[0].id);
+                        }
+                        alert(`Successfully imported ${people.length} ancestors!`);
+                    } else {
+                        alert('Invalid data format');
+                    }
+                } catch (error) {
+                    alert('Error importing data: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to delete ALL ancestor data? This cannot be undone.')) {
+                if (confirm('Really delete everything? This is your last chance!')) {
+                    people = [];
+                    selectedPerson = null;
+                    saveToStorage();
+                    renderPeopleList();
+                    updateStats();
+                    displayEmptyState();
+                }
+            }
+        }
+
+        function loadSampleData() {
+            const samplePeople = [
+                {
+                    id: Date.now() + 1,
+                    name: "Mary O'Brien",
+                    birthYear: 1842,
+                    deathYear: 1918,
+                    location: "County Cork, Ireland",
+                    occupation: "Seamstress",
+                    notes: "Emigrated to Boston during the Irish Potato Famine era. Worked in textile factories."
+                },
+                {
+                    id: Date.now() + 2,
+                    name: "Thomas Wilson",
+                    birthYear: 1865,
+                    deathYear: 1932,
+                    location: "Lancashire, England",
+                    occupation: "Coal Miner",
+                    notes: "Worked in coal mines during the Industrial Revolution. Lost two brothers in mine accidents."
+                },
+                {
+                    id: Date.now() + 3,
+                    name: "Johann Schmidt",
+                    birthYear: 1888,
+                    deathYear: 1965,
+                    location: "Bavaria, Germany",
+                    occupation: "Blacksmith",
+                    notes: "Fought in World War I. Immigrated to United States in 1923."
+                },
+                {
+                    id: Date.now() + 4,
+                    name: "Elizabeth Harper",
+                    birthYear: 1901,
+                    deathYear: 1989,
+                    location: "Virginia, United States",
+                    occupation: "Teacher",
+                    notes: "One of the first women in her family to attend college. Taught in rural schools."
+                }
+            ];
+
+            samplePeople.forEach(person => {
+                person.context = enrichWithContext(person.birthYear, person.deathYear, person.location, person.occupation);
+            });
+
+            people = samplePeople;
+            saveToStorage();
+            renderPeopleList();
+            updateStats();
+            selectPerson(people[0].id);
+        }
+
+        function closeModal() {
+            document.getElementById('importModal').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
